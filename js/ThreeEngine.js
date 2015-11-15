@@ -115,6 +115,10 @@ var ThreeEngine = function () {
 
 
 		scene = new THREE.Scene();
+    //add axisHelper
+    var axisHelper = new THREE.AxisHelper( 500 );
+    scene.add( axisHelper );
+    
 		camera = new THREE.PerspectiveCamera( 60, 1, 1, 20000 );
 		//scene.add(camera);
 
