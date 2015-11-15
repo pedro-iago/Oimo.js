@@ -1721,7 +1721,8 @@ var ThreeEngine = function () {
 							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[point.x, point.y, point.z]}); break;
 
 							case 'drag': 
-							    var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
+							    //look onMouseMove function
+                  //var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
 							break;
 							
 						}
@@ -1824,6 +1825,7 @@ var ThreeEngine = function () {
 		doc.body.style.cursor = 'auto';
 	}
 
+  var old_mx, old_my = 0;
 	var onMouseMove = function (e) {
 		e.preventDefault();
 		var px, py;
@@ -1837,19 +1839,28 @@ var ThreeEngine = function () {
     mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = -( py / vsize.y ) * 2 + 1;
 		rayTest();
-
-		if (mouse.down && !camPos.automove ) {
-			if (mouse.moving) {
+    
+		if (mouse.down && !camPos.automove && mouse.moving) {
+			if (e.button === 2) {
 				doc.body.style.cursor = 'move';
 				camPos.horizontal = ((px - mouse.ox) * 0.3) + mouse.h;
 				camPos.vertical = (-(py - mouse.oy) * 0.3) + mouse.v;
+        camPos.vertical = Math.max( Math.min(camPos.vertical, 179.9), 0.01 );
 				moveCamera();
-			}/* else {
-				mouse.mx = ( e.clientX / vsize.x ) * 2 - 1;
-		    	mouse.my = -( e.clientY / vsize.y ) * 2 + 1;
-		    	rayTest();
-			}*/
+			}
+      else if(e.button === 0 && mouseMode[mMode] === 'drag'){
+        let off = new THREE.Vector3( -(mouse.mx - old_mx)*camPos.distance, -(mouse.my - old_my)*camPos.distance, 0);
+        off.applyAxisAngle(new THREE.Vector3(-1,0,0), (90 - mouse.v) * Math.PI/180);
+        off.applyAxisAngle(new THREE.Vector3(0,1,0), (90 - mouse.h) * Math.PI/180);
+        center.x += off.x;
+        center.y += off.y;
+        center.z += off.z;
+        moveCamera();
+      }
 		}
+    
+    old_mx = mouse.mx;
+		old_my = mouse.my;  
 	}
 
 	var onMouseWheel = function (e) {
@@ -1857,7 +1868,8 @@ var ThreeEngine = function () {
 		if(e.wheelDeltaY){delta=e.wheelDeltaY*0.01;}
 		else if(e.wheelDelta){delta=e.wheelDelta*0.05;}
 		else if(e.detail){delta=-e.detail*1.0;}
-		camPos.distance-=(delta*10);
+		camPos.distance-=(delta*100);
+    camPos.distance = Math.max(camPos.distance, 0.1);
 		moveCamera();
 	}
 
