@@ -206,7 +206,7 @@ var Interface = function (name) {
     //  MENU DEMO
     //-----------------------------------------------------
 
-    var aMenu = doc.createElement( 'div' );
+  var aMenu = doc.createElement( 'div' );
 	aMenu.style.cssText = 'left:calc(50% - 100px); width:200px; top:20px; position:absolute; display:block; text-align:center; ';
 	container.appendChild( aMenu );
 
@@ -236,19 +236,19 @@ var Interface = function (name) {
 	aMenu.appendChild( bcenter );
 	aMenu.appendChild( bnext );
 
-    bprev.addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = 'rgba(127,219,255,0.3)';  }, false );
-    bprev.addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = 'rgba(1,1,1,0)';  }, false );
-    bnext.addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = 'rgba(127,219,255,0.3)';  }, false );
-    bnext.addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = 'rgba(1,1,1,0)';  }, false );
+  bprev.addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = 'rgba(127,219,255,0.3)';  }, false );
+  bprev.addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = 'rgba(1,1,1,0)';  }, false );
+  bnext.addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = 'rgba(127,219,255,0.3)';  }, false );
+  bnext.addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = 'rgba(1,1,1,0)';  }, false );
 
 	bprev.addEventListener( 'mousedown', function ( event ) { event.preventDefault(); prevDemo(); this.style.backgroundColor = 'rgba(127,219,255,0.5)';}, false );
 	bnext.addEventListener( 'mousedown', function ( event ) { event.preventDefault(); nextDemo(); this.style.backgroundColor = 'rgba(127,219,255,0.5)';}, false );
 
 	//-----------------------------------------------------
-    //  MENU DEMO
-    //-----------------------------------------------------
+  //  MENU DEMO
+  //-----------------------------------------------------
 
-    var bMenu = doc.createElement( 'div' );
+  var bMenu = doc.createElement( 'div' );
 	bMenu.style.cssText = 'right:0px; top:12px; position:absolute; width:'+(iconSize+12)+'px; display:block; text-align:center;  margin-right:5px;';
 	container.appendChild( bMenu );
 
@@ -470,9 +470,4 @@ var Interface = function (name) {
 		demoName:demoName,
 		getdemoName:getdemoName
 	}
-
-
-	
-
-
 }
