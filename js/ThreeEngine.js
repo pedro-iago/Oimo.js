@@ -118,11 +118,9 @@ var ThreeEngine = function () {
 		camera = new THREE.PerspectiveCamera( 60, 1, 1, 20000 );
 		//scene.add(camera);
 
-		
-
 		materialSky = new THREE.MeshBasicMaterial( { map:basicSky() , depthWrite: false} );// side:THREE.BackSide,
 		var skyGeo = new THREE.BufferGeometry();
-        skyGeo.fromGeometry( new THREE.SphereGeometry(10000, 20, 12) );
+    skyGeo.fromGeometry( new THREE.SphereGeometry(10000, 20, 12) );
 		sky = new THREE.Mesh(skyGeo, materialSky);
 		sky.rotation.y = 180*ToRad;
 		sky.scale.set(1,1,-1);
@@ -139,7 +137,7 @@ var ThreeEngine = function () {
 		//
 		
 		
-        scene.add(back);
+    scene.add(back);
 		scene.add(content);
 		scene.add(contentPlus);
 		scene.add(contentDebug);
@@ -1576,7 +1574,8 @@ var ThreeEngine = function () {
 		playerSet.z += (playerSet.destZ - playerSet.z) * playerSet.speed;
 		playerSet.r = (-Math.atan2(playerSet.z-marker.position.z,playerSet.x-marker.position.x));
 
-        THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
+    
+    THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
 
 		//the unit for velocity is [m/s] so you should devide movement amount by movement duration
 		var v = { 
@@ -1686,7 +1685,6 @@ var ThreeEngine = function () {
 			if ( intersectsBack.length || intersects.length ) {
 				if(!marker.visible) marker.visible=true;
 				
-
 				if ( intersectsBack.length ) {
 					if(markerMaterial.color!==0x888888)markerMaterial.color.setHex(0x888888);
 					point = intersectsBack[0].point;
@@ -1722,21 +1720,16 @@ var ThreeEngine = function () {
 							    var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
 							break;
 							
-						
-
-
 						}
-				    }
-			    }
-			    if(mouseMode[mMode]==='shoot' && mouse.press){
-			    	mouse.press = false;
-					shoot(camera.position,point);
-				}
-
-
-		    } else {
-		    	marker.visible = false;
-		    }
+				  }
+			  }
+        if(mouseMode[mMode]==='shoot' && mouse.press){
+          mouse.press = false;
+          shoot(camera.position,point);
+        }
+      } else {
+        marker.visible = false;
+      }
 		}
 	}
 
@@ -1747,10 +1740,10 @@ var ThreeEngine = function () {
 	var shoot = function ( p0, p1 ) {
 		var n = content.children.length;
 		var bullet = new THREE.Mesh( geoBulletb, getMaterial('bullet') );
-		bullet.scale.set( 30, 30, 30 ); 
+    bullet.scale.set( 30, 30, 30 ); 
 		bullet.position.y = 10000;
 		bullet.receiveShadow = true;
-	    bullet.castShadow = true;
+	  bullet.castShadow = true;
 		bullet.name = n;
 
 		var impulse = p1.sub(p0);
@@ -1818,7 +1811,6 @@ var ThreeEngine = function () {
 		mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = - ( py / vsize.y ) * 2 + 1;
 		mouse.down = true;
-		if(mouseMode[mMode]==='shoot')mouse.press = true;
 		if(followSpecial === 'droid')setPlayerDestination();
 		rayTest();
 	}
@@ -1831,15 +1823,14 @@ var ThreeEngine = function () {
 	var onMouseMove = function (e) {
 		e.preventDefault();
 		var px, py;
-	    if(e.touches){
-	        px = e.clientX || e.touches[ 0 ].pageX;
-	        py = e.clientY || e.touches[ 0 ].pageY;
-	    } else {
-	        px = e.clientX;
-	        py = e.clientY;
-	    }
-		
-		mouse.mx = ( px / vsize.x ) * 2 - 1;
+    if(e.touches){
+        px = e.clientX || e.touches[ 0 ].pageX;
+        py = e.clientY || e.touches[ 0 ].pageY;
+    } else {
+        px = e.clientX;
+        py = e.clientY;
+    }  
+    mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = -( py / vsize.y ) * 2 + 1;
 		rayTest();
 
@@ -1858,7 +1849,7 @@ var ThreeEngine = function () {
 	}
 
 	var onMouseWheel = function (e) {
-		var delta = 0;
+    var delta = 0;
 		if(e.wheelDeltaY){delta=e.wheelDeltaY*0.01;}
 		else if(e.wheelDelta){delta=e.wheelDelta*0.05;}
 		else if(e.detail){delta=-e.detail*1.0;}
@@ -1961,10 +1952,10 @@ var ThreeEngine = function () {
 			camPos.horizontal = unwrapDegrees(camPos.horizontal);
 			camPos.vertical = unwrapDegrees(camPos.vertical);
 			phi = camPos.vertical*ToRad;
-		    theta = camPos.horizontal*ToRad;
+		  theta = camPos.horizontal*ToRad;
 		} else{
 			phi = vertical*ToRad;
-		    theta = horizontal*ToRad;
+		  theta = horizontal*ToRad;
 		}
 		if(mainCamera){
 			camPos.phi = phi; camPos.theta = theta;
@@ -1995,10 +1986,7 @@ var ThreeEngine = function () {
 		return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 	}
 
-
-
 	// public methode
-
 	return {
 
 		domElement: container,
