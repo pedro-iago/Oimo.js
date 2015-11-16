@@ -96,24 +96,6 @@ var Editor = function (Pos) {
 		dom.style.transform = 'rotate('+rvalue+'deg)';
 	}
 
-    // MENU DEMO
-	for(var i=0;i!==maxDemo;i++){
-		bbMenu[i] = doc.createElement( 'div' );
-		bbMenu[i].style.cssText = bstyle + buttonActif + "width:20px; margin-right=2px;";
-		if(i<10){
-			bbMenu[i].textContent = '0'+i;
-			bbMenu[i].name = 'demo0'+i;
-		}else{
-			bbMenu[i].textContent = i;
-			bbMenu[i].name = 'demo'+i;
-		}
-		bbMenu[i].addEventListener( 'mousedown', function ( event ) { event.preventDefault(); importScript(this.name); currentDemo=this.name; this.style.backgroundColor =  colors[3];}, false );
-		bbMenu[i].addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = colors[2]; }, false );
-		bbMenu[i].addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = colors[0]; testCurrentDemo(); }, false );		
-		decoFrame.appendChild( bbMenu[i] );
-	}
-
-
 	// MAIN EDITOR
 	var MainEditor = doc.createElement( 'iframe' );
 	MainEditor.id = 'mEditor';
@@ -147,6 +129,25 @@ var Editor = function (Pos) {
 		nscript.text = MainEditor.contentWindow.codeEditor.getValue();
 		head.appendChild(nscript);
 	}
+  
+  var init =  function () {
+    // MENU DEMO
+		for(let i=0;i!==maxDemo;i++){
+			bbMenu[i] = doc.createElement( 'div' );
+			bbMenu[i].style.cssText = bstyle + buttonActif + "width:20px; margin-right=2px;";
+			if(i<10){
+				bbMenu[i].textContent = '0'+i;
+				bbMenu[i].name = 'demo0'+i;
+			}else{
+				bbMenu[i].textContent = i;
+				bbMenu[i].name = 'demo'+i;
+			}
+			bbMenu[i].addEventListener( 'mousedown', function ( event ) { event.preventDefault(); runDemoByID(i); this.style.backgroundColor =  colors[3];}, false );
+			bbMenu[i].addEventListener( 'mouseover', function ( event ) { event.preventDefault(); this.style.backgroundColor = colors[2]; }, false );
+			bbMenu[i].addEventListener( 'mouseout', function ( event ) { event.preventDefault();  this.style.backgroundColor = this.name===currentDemo? colors[1] : colors[0]; }, false );
+			decoFrame.appendChild( bbMenu[i] );
+		}
+	}
 
 	return {
 		update:update,
@@ -156,7 +157,8 @@ var Editor = function (Pos) {
 		importScript:importScript,
 		getScript: function () {
 			return nscript;
-		}
+		},
+		init: init,
 	}
 
 }
