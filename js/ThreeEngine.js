@@ -84,7 +84,7 @@ var ThreeEngine = function () {
 
 	var isOptimized;
 
-	var mouseMode = [ 'none', 'delete', 'shoot', 'push', 'drag' ];
+	var mouseMode = [ 'drag', 'delete', 'shoot', 'push' ];
 	var mMode = 0; 
 
 	var debugColor = 0x282929;
@@ -1822,6 +1822,7 @@ var ThreeEngine = function () {
 		mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = - ( py / vsize.y ) * 2 + 1;
 		mouse.down = true;
+		if(mouseMode[mMode]==='shoot' && mouse.button === 1)mouse.press = true;
 		if(followSpecial === 'droid')setPlayerDestination();
 		rayTest();
 	}
@@ -2057,7 +2058,7 @@ var ThreeEngine = function () {
 			if(mMode === mouseMode.length) mMode = 0;
 		},
 		getMouseMode: function () {
-			return 'mouse ' + mouseMode[mMode];
+			return mouseMode[mMode];
 		},
 		getFps: function (name) {
 			return fpstxt +" fps / "+ ms+" ms"//+"/"+maxms+" ms";
