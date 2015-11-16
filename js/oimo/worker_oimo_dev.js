@@ -66,18 +66,11 @@ var removeTemp = {};
 
 self.onmessage = function (e) {
     var phase = e.data.tell;
-    if(phase === "INITWORLD"){
-        dt = e.data.dt || 1/60;
-        broadPhase = e.data.broadPhase || 2;
-        iterations = e.data.iterations || 8;
-        newGravity = e.data.G || -10;
-        createWorld();
-    }
     // from editor
     if(phase === "ADD") ADD(e.data.obj);
     if(phase === "GET") GET(e.data.names);
-    if(phase === "CLEAR") clearWorld();
-    if(phase === "BASIC") basicStart(e.data);
+    if(phase === "CLEAR_OIMO") clearWorld(); 
+    if(phase === "INIT_OIMO") basicStart(e.data.settings);
     // from mouse
     if(phase === "REMOVE"){ isNeedRemove = true; removeTemp = e.data; };
     if(phase === "SHOOT") SHOOT(e.data);
@@ -290,8 +283,8 @@ var clearWorld = function(){
 
     if(isTimout)clearTimeout(timer);
     else clearInterval(timer);
-
-    world.clear();
+    if(world)
+      world.clear();
     // Clear control object
     if(car !== null ) car = null;
     if(van !== null ) van = null;
@@ -300,7 +293,7 @@ var clearWorld = function(){
 
     resetArray();
     // Clear three object
-    self.postMessage({tell:"CLEAR"});
+    self.postMessage({tell:"CLEAR_THREE"});
 
 }
 
@@ -328,6 +321,8 @@ var resetArray = function (){
 //--------------------------------------------------
 
 var basicStart = function(data){
+  
+    world = world || new OIMO.World();
     
     isTimout = data.timer || false;
 
@@ -359,11 +354,11 @@ var basicStart = function(data){
             }
         }
     }
-
-    self.postMessage({tell:"INITSTATIC", types:staticTypes, sizes:staticSizes, matrix:staticMatrix });
-    self.postMessage({tell:"INIT", types:types, sizes:sizes, demo:-1, joints:joints.length });
-}
-
+    
+    self.postMessage( { tell:"INIT_DEMO" } );  
+    //for some reason all those arrays are empty, and that doesn't matter? (notSendToThree related)
+    self.postMessage( { tell:"INIT_THREE", non_static : {types:types, sizes:sizes, joints:joints.length}, 
+                        static_objects : {types:staticTypes, sizes:staticSizes, matrix:staticMatrix} } );
 }
 
 //--------------------------------------------------

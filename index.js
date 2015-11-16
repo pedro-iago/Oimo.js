@@ -39,6 +39,23 @@ function init() {
 //  OIMO ON MESSAGE MAIN
 //-----------------------------------------------------
 
+OimoWorker.onmessage = function(e) {
+  var phase = e.data.tell;
+  if(phase === "INIT_DEMO"){
+    if( Editor.getScript() ) initDemo();
+  }
+  // create mesh
+  if(phase === "INIT_THREE"){
+    TE.createStaticObjects(e.data.static_objects);
+    TE.createObjects(e.data.non_static);
+    TE.createJoints(e.data.non_static.joints);
+    OimoWorker.postMessage({tell:"UPDATE_OIMO"});
+  }
+  // clear three object
+  if(phase === "CLEAR_THREE"){
+    TE.clearAll();
+  }
+}
 
 //-----------------------------------------------------
 //  OIMO POST MESSAGE FUNCTION
@@ -55,9 +72,10 @@ var CAM;
 var ADD;
 var WORLD = function(obj){
   worldSettings = obj || {ground:false};
+  OimoWorker.postMessage({tell:"CLEAR_OIMO"});
+  OimoWorker.postMessage({tell:"INIT_OIMO", settings:worldSettings});
 }  
 
 //-----------------------------------------------------
 //  OIMO INFO
 //-----------------------------------------------------
-
