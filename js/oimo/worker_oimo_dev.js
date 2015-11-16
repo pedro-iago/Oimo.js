@@ -154,10 +154,12 @@ var SHOOT = function(data){
 
 var PUSH = function(data){
     var target = data.target.map(function(x) { return x * OIMO.INV_SCALE; });
+    var pos = data.pos.map(function(x) { return x * OIMO.INV_SCALE; });
     var position = new OIMO.Vec3();
-    //var position = new OIMO.Vec3(data.obj.pos[0], data.obj.pos[1], data.obj.pos[2]);
-    var force = new OIMO.Vec3(target[0],target[1], target[2]);
-    bodys[data.n].applyImpulse(position,force)
+    var position = new OIMO.Vec3(pos[0], pos[1], pos[2]);
+    var force = new OIMO.Vec3(100*target[0],100*target[1],100*target[2]);
+    if(bodys[data.n])
+      bodys[data.n].applyImpulse(position,force)
 }
 
 //--------------------------------------------------

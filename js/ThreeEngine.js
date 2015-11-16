@@ -1709,18 +1709,22 @@ var ThreeEngine = function () {
 					//console.log("intersects.length: "+ intersects.length);
 					//console.log("intersects.distance: "+ intersects[0].distance);
 					//console.log("intersects.face: "+ intersects[0].face);
-					point = intersects[0].point;
+					point = intersects[0].point; 
+          
+          let normal = intersects[0].face.normal;
+          let normalMatrix = new THREE.Matrix3().getNormalMatrix( intersects[0].object.matrixWorld );
+          normal = normal.clone().applyMatrix3( normalMatrix ).normalize();
+          
 					marker.position.copy( point );
 					//if(intersects[0].face!==null)marker.lookAt(intersects[0].face.normal);
 					selected = intersects[0].object;
 					selectedCenter = point;
 
 					//attachControl(selected);
-
-					if(mouse.down){
+					if(mouse.down && mouse.button===1){
 						switch(mouseMode[mMode]){
 							case 'delete': OimoWorker.postMessage({tell:"REMOVE", type:'object', n:selected.name}); break;
-							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[point.x, point.y, point.z]}); break;
+							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[-normal.x, -normal.y, -normal.z], pos:[point.x, point.y, point.z] }); break;
 
 							case 'drag': 
 							    //look onMouseMove function
