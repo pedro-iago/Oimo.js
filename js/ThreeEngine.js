@@ -2069,8 +2069,24 @@ var ThreeEngine = function () {
 		getAnistropy: function (name) {
 			return MaxAnistropy;
 		},
-
+    mapMaterial: function (meshName, sleeps){ 
+      meshName = sleeps? meshName.substr(0,5) + "sleep" : meshName.substr(0,5); 
+      switch( meshName ){
+        case "mat01": return this.materials[0];      
+        case "mat01sleep": return this.materials[8];
+        case "mat02": return this.materials[1];
+        case "mat02sleep": return this.materials[9];
+        case "mat03": return this.materials[2];
+        case "mat03sleep": return this.materials[10];  
+        case "mat04": return this.materials[3];
+        case "mat04sleep": return this.materials[11];
+        case "mat07": return this.materials[6];
+        case "mat07sleep": return this.materials[12];
+        default:  return this.materials[12]; 
+      } 
+    },
     allObjectLoaded: allObjectLoaded
 	}
+  
 	return self;
 };

@@ -66,6 +66,8 @@ OimoWorker.onmessage = function(e) {
           mesh.position.setFromMatrixPosition( mtx )
           mesh.quaternion.setFromRotationMatrix( mtx );
         } 
+        if(mesh.material.name.substr(0,3) === 'mat')
+          mesh.material = TE.mapMaterial(mesh.material.name, m[i][15]);
       }
     }
     // Update rendering joints
