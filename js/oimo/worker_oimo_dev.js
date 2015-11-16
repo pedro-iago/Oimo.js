@@ -91,12 +91,10 @@ self.onmessage = function (e) {
     if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);
     if(phase === "CAMERA") userCamera(e.data.cam);
     if(phase === "GRAVITY") newGravity = e.data.G;
-    if(phase === "NEXT") initNextDemo();
-    if(phase === "PREV") initPrevDemo();
-    if(phase === "BONESLIST"){ 
+    if(phase === "BONESLIST"){ //to be removed
         bonesPosition = e.data.pos; 
         bonesRotation = e.data.rot;
-        startDemo();
+        //startDemo();
     }
 }
 
@@ -280,7 +278,6 @@ var createWorld = function(){
     world.gravity = new OIMO.Vec3(0, Gravity, 0);
     
     resetArray();
-    lookIfNeedInfo();
 
 }
 
@@ -365,38 +362,6 @@ var basicStart = function(data){
     self.postMessage({tell:"INITSTATIC", types:staticTypes, sizes:staticSizes, matrix:staticMatrix });
     self.postMessage({tell:"INIT", types:types, sizes:sizes, demo:-1, joints:joints.length });
 }
-
-//--------------------------------------------------
-//    DEMO INIT
-//--------------------------------------------------
-
-var initNextDemo = function(){
-    clearWorld();
-    currentDemo ++;
-    if(currentDemo === maxDemo)currentDemo=0;
-    lookIfNeedInfo();
-}
-
-var initPrevDemo = function(){
-    clearWorld();
-    currentDemo --;
-    if(currentDemo < 0) currentDemo=maxDemo-1;
-    lookIfNeedInfo();
-}
-
-var lookIfNeedInfo = function(){
-    if(currentDemo===6) getBonesInfo('sila');
-    else startDemo();
-}
-
-var startDemo = function(){
-
-    // start new demo
-    eval("demo"+currentDemo)();
-
-    // start engine
-    self.postMessage({tell:"INITSTATIC", types:staticTypes, sizes:staticSizes, matrix:staticMatrix });
-    self.postMessage({tell:"INIT", types:types, sizes:sizes, demo:currentDemo, joints:joints.length });
 
 }
 

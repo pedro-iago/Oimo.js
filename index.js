@@ -17,6 +17,9 @@ function init() {
   Editor = new Editor();
   Interface = new Interface('dev');
   Ambience = new Ambience();
+  
+  Interface.prevDemo = Editor.prevDemo;  
+  Interface.nextDemo = Editor.nextDemo;
  
   document.body.appendChild( TE.domElement );
   document.body.appendChild( Editor.domElement );

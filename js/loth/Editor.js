@@ -57,12 +57,6 @@ var Editor = function (Pos) {
 	var buttonActif = 'position:relative; display:inline-block; cursor:pointer; pointer-events:auto;';
 	var bstyle =unselect+ ' font-size:14px; margin-right:4px; -webkit-border-radius:40px; border-radius:40px;  border:2px solid #343434; background:'+colors[0]+'; height:19px; padding:2px 2px; text-align:center;';
 
-	var bbMenu = [];
-	var nscript;
-	var maxDemo = 12;
-	var currentDemo;
-
-
 	var decoFrame = doc.createElement( 'div' );
 	decoFrame.id = 'decoFrame';
 	decoFrame.style.cssText =unselect+'top:10px; left:130px; position:absolute; display:block; width:calc(100% - 120px); height:60px; overflow:hidden; padding:0;';
@@ -95,6 +89,11 @@ var Editor = function (Pos) {
 		dom.style.oTransform = 'rotate('+rvalue+'deg)';
 		dom.style.transform = 'rotate('+rvalue+'deg)';
 	}
+  
+  var bbMenu = [];
+	var nscript;
+	var maxDemo = window.numDemos || 11;
+	var currentDemo = "demo00";
 
 	// MAIN EDITOR
 	var MainEditor = doc.createElement( 'iframe' );
@@ -104,19 +103,9 @@ var Editor = function (Pos) {
 	MainEditor.style.cssText = unselect+"  top:70px; bottom:0px; left:0; margin:0; padding:0; position:absolute; height:calc(100% - 74px); width:calc(100% - 4px); display:block; pointer-events:auto; border:none;"
 	container.appendChild( MainEditor );
 
-	var importScript = function(name){
+  var importScript = function(name){
 		MainEditor.contentWindow.setBase(Editor);
-		
-		//if(name =='demo00')
-			MainEditor.contentWindow.loadfileJS(name+".js");
-		//else MainEditor.contentWindow.loadfile(name+".html");
-	}
-
-	var testCurrentDemo = function(){
-		for(var i=0, j=bbMenu.length;i!==j;i++){
-			if(bbMenu[i].name === currentDemo)bbMenu[i].style.backgroundColor = colors[1];
-			else bbMenu[i].style.backgroundColor = colors[0];
-		}
+		MainEditor.contentWindow.loadfileJS(name+".js");
 	}
   
 	var update = function (){
@@ -149,6 +138,25 @@ var Editor = function (Pos) {
 		}
 	}
 
+	var runDemoByID = function(cid){
+		var id  = Number( currentDemo.substr(-2,2) );
+		currentDemo = cid<10? 'demo0'+cid : 'demo' + cid;
+		bbMenu[id].style.backgroundColor = colors[0];
+		bbMenu[cid].style.backgroundColor = colors[1];
+		if(window.objectsAreLoaded)
+			importScript(currentDemo);
+	}
+
+	let offset = function(off){
+		var cid = Number( currentDemo.substr(-2,2) ) + off;
+    cid = cid >= maxDemo? cid - maxDemo : cid;
+    cid = cid < 0? maxDemo + cid : cid;
+		return cid;
+	}
+
+	var nextDemo = () => { runDemoByID( offset( 1) ); }
+	var prevDemo = () => { runDemoByID( offset(-1) ); }
+
 	return {
 		update:update,
 		domElement: container,
@@ -159,6 +167,8 @@ var Editor = function (Pos) {
 			return nscript;
 		},
 		init: init,
+		nextDemo: nextDemo,
+		prevDemo: prevDemo,
 	}
 
 }
