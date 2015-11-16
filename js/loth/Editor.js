@@ -154,6 +154,7 @@ var Editor = function (Pos) {
 		return cid;
 	}
 
+	var currDemo = () => { runDemoByID( offset( 0) ); }
 	var nextDemo = () => { runDemoByID( offset( 1) ); }
 	var prevDemo = () => { runDemoByID( offset(-1) ); }
 
@@ -169,6 +170,7 @@ var Editor = function (Pos) {
 		init: init,
 		nextDemo: nextDemo,
 		prevDemo: prevDemo,
+		currDemo: currDemo
 	}
 
 }

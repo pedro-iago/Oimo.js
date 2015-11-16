@@ -20,6 +20,7 @@ function init() {
   
   Interface.prevDemo = Editor.prevDemo;  
   Interface.nextDemo = Editor.nextDemo;
+  TE.allObjectLoaded = Editor.currDemo;
  
   document.body.appendChild( TE.domElement );
   document.body.appendChild( Editor.domElement );

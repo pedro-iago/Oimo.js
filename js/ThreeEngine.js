@@ -1363,7 +1363,8 @@ var ThreeEngine = function () {
 
 	var seaList = ['geo', 'snake', 'sila', 'gyro', 'droid'];
 	var seaN = 0;
-
+  var allObjectLoaded = () => {}; //dummy holder for self.allObjectLoaded()
+  
 	var initSea3DMesh = function (){
 		var name = seaList[seaN];
 		//pool = new SEA3D.Pool('res/model/droid.sea', populate)
@@ -1378,7 +1379,8 @@ var ThreeEngine = function () {
 			if(seaList[seaN]!=null)initSea3DMesh();
 			else{
 				defineGeometry();
-				mainAllObjectLoaded();
+        window.objectsAreLoaded = true;
+				self.allObjectLoaded();
 				isLoading = false;
 			} 
 		}
@@ -2003,7 +2005,7 @@ var ThreeEngine = function () {
 	}
 
 	// public methode
-	return {
+  var self = {
 
 		domElement: container,
 
@@ -2062,6 +2064,8 @@ var ThreeEngine = function () {
 		getAnistropy: function (name) {
 			return MaxAnistropy;
 		},
-	}
 
+    allObjectLoaded: allObjectLoaded
+	}
+	return self;
 };
