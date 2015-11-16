@@ -78,7 +78,7 @@ self.onmessage = function (e) {
     if(phase === "DRAG"){};
     
 
-    if(phase === "UPDATE"){ if(isTimout) update(); else timer = setInterval(update, timerStep);  }
+    if(phase === "UPDATE_OIMO"){ if(isTimout) update(); else timer = setInterval(update, timerStep);  }
     if(phase === "KEY") userKey(e.data.key);
     if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);
     if(phase === "CAMERA") userCamera(e.data.cam);
@@ -212,7 +212,7 @@ var update = function(){
    
     //worldInfo();
 
-    self.postMessage({tell:"RUN", infos:world.performance.toArray(), matrix:matrix, matrixJoint:matrixJoint });
+    self.postMessage({tell:"UPDATE_THREE", infos:world.performance.toArray(), matrix:matrix, matrixJoint:matrixJoint });
 
     if(isTimout){
         delay = timerStep - (Date.now()-timeStart);
