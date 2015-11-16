@@ -80,7 +80,7 @@ self.onmessage = function (e) {
 
     if(phase === "UPDATE_OIMO"){ if(isTimout) update(); else timer = setInterval(update, timerStep);  }
     if(phase === "KEY") userKey(e.data.key);
-    if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);
+    if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);  //to be removed
     if(phase === "CAMERA") userCamera(e.data.cam);
     if(phase === "GRAVITY") newGravity = e.data.G;
     if(phase === "BONESLIST"){ //to be removed

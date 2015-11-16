@@ -87,6 +87,10 @@ OimoWorker.onmessage = function(e) {
   if(phase === "CLEAR_THREE"){
     TE.clearAll();
   }
+  if(phase === "REMOVE"){TE.removeObject(e.data.n);}
+  if(phase === "GRAVITY") Interface.setCurrentGravity(e.data.G);
+  // get ragdoll info
+  if(phase === "GETBONES") TE.getSqueletonStructure(e.data.name);
 }
 
 //-----------------------------------------------------
@@ -102,6 +106,7 @@ let worldSettings = null;
 var demoName;
 var CAM;
 var ADD;
+var GET = function(names){ OimoWorker.postMessage({tell:"GET", names:names}); }
 var WORLD = function(obj){
   worldSettings = obj || {ground:false};
   OimoWorker.postMessage({tell:"CLEAR_OIMO"});
