@@ -1,4 +1,4 @@
-CLEAR({timer:false, timestep:1/60, iteration:8, broadphase:2, G:-10});
+WORLD({timer:false, timestep:1/60, iteration:8, broadphase:2, G:-10});
 
 function initDemo()
 {
@@ -20,8 +20,7 @@ function initDemo()
     var sx, sy, sz;
 
     for (var i=0; i!==max; ++i ){
-        if(version=="DEV") n=2;
-        else n=3;
+        n=3;
         t = Math.floor(Math.random()*n)+1;
         px = -100+Math.random()*200;
         pz = -100+Math.random()*200;
