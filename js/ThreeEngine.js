@@ -5,8 +5,11 @@
     http://3dflashlo.wordpress.com/
 */
 
+'use strict';
+
 var ThreeEngine = function () {
-	'use strict';
+	var doc = document;
+	
 	// containe background object
 	var back = new THREE.Object3D();
 	// containe all object from simulation
@@ -28,7 +31,7 @@ var ThreeEngine = function () {
 	var vsize = { x:0, y:0, z:0};
 	var vmid = { x:1, y:1, mode:'no' };
 	var camPos = { horizontal: 40, vertical: 60, distance: 2000, automove: false, phi:0, theta:0 };
-	var mouse = { ox:0, oy:0, h:0, v:0, mx:0, my:0, down:false, over:false, press:false, moving:true };
+	var mouse = { ox:0, oy:0, h:0, v:0, mx:0, my:0, down:false, over:false, press:false, moving:true, button:0 };
 	var center = new THREE.Vector3(0,150,0);
 
 	var delta, clock = new THREE.Clock();
@@ -56,7 +59,7 @@ var ThreeEngine = function () {
 
 	var unselect = '-o-user-select:none; -ms-user-select:none; -khtml-user-select:none; -webkit-user-select:none; -moz-user-select: none;';
 
-	var container = document.createElement( 'div' );
+	var container = doc.createElement( 'div' );
 	container.id = 'container';
 	container.style.cssText = unselect + 'padding:0; position:absolute; left:0; top:0; bottom:0; overflow:hidden;';
 
@@ -66,20 +69,22 @@ var ThreeEngine = function () {
 	var followObject = null;
 	var followSpecial = null;
 	var player = null;
+	var blobs = null;
 
-	var isBuffered = true;
+	//var isBuffered = true;
 	var isDebug = true;
 
 	var materialType=0;
 	var isShadow = false;
 	var isReflect = true;
+	var isDiffBackgroud = false;
 	
 
 	var planeBG = null;
 
 	var isOptimized;
 
-	var mouseMode = [ 'none', 'delete', 'shoot', 'push', 'drag' ];
+	var mouseMode = [ 'drag', 'delete', 'shoot', 'push' ];
 	var mMode = 0; 
 
 	var debugColor = 0x282929;
@@ -100,9 +105,9 @@ var ThreeEngine = function () {
 		// for my local test on windows explorer
 		if(browserName==="Firefox" || browserName==="Chrome") PATH = '';
 
-		renderer = new THREE.WebGLRenderer({precision: "lowp", antialias:false });
-		renderer.autoClearColor = false;
-		renderer.autoClear = false;
+		renderer = new THREE.WebGLRenderer({precision: "lowp", antialias:false, devicePixelRatio:1 });
+		//renderer.autoClearColor = false;
+		//renderer.autoClear = false;
 		//renderer.gammaInput = true;
         //renderer.gammaOutput = true;
 		
@@ -110,26 +115,33 @@ var ThreeEngine = function () {
 
 
 		scene = new THREE.Scene();
+    //add axisHelper
+    var axisHelper = new THREE.AxisHelper( 500 );
+    scene.add( axisHelper );
+    
 		camera = new THREE.PerspectiveCamera( 60, 1, 1, 20000 );
-		scene.add(camera);
-
-		sceneSky = new THREE.Scene();
-		cameraSky = new THREE.PerspectiveCamera( 60, 1, 1, 999999 );
-		sceneSky.add(cameraSky);
+		//scene.add(camera);
 
 		materialSky = new THREE.MeshBasicMaterial( { map:basicSky() , depthWrite: false} );// side:THREE.BackSide,
-		var skyGeo;
-		if(isBuffered) skyGeo = THREE.BufferGeometryUtils.fromGeometry(new THREE.SphereGeometry(20000, 20, 12));
-		else skyGeo = new THREE.SphereGeometry(20000, 20, 12);
-		//sky = new THREE.Mesh(new THREE.IcosahedronGeometry(20000,1), materialSky);
+		var skyGeo = new THREE.BufferGeometry();
+    skyGeo.fromGeometry( new THREE.SphereGeometry(10000, 20, 12) );
 		sky = new THREE.Mesh(skyGeo, materialSky);
 		sky.rotation.y = 180*ToRad;
-		sky.scale.set(1,1,-1)
-		
-		sceneSky.add(sky);
-		
+		sky.scale.set(1,1,-1);
 
-        scene.add(back);
+		if(isDiffBackgroud){
+			sceneSky = new THREE.Scene();
+			cameraSky = new THREE.PerspectiveCamera( 60, 1, 1, 999999 );
+			sceneSky.add(cameraSky);
+			sceneSky.add(sky);
+		} else {
+			scene.add(sky);
+		}
+		
+		//
+		
+		
+    scene.add(back);
 		scene.add(content);
 		scene.add(contentPlus);
 		scene.add(contentDebug);
@@ -139,8 +151,10 @@ var ThreeEngine = function () {
 		//addControl();
 
 		// marker for mouse position
+		var markerGeo = new THREE.BufferGeometry();
+		markerGeo.fromGeometry( new THREE.SphereGeometry(6,6,4) );
 		markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
-		marker = new THREE.Mesh(new THREE.SphereGeometry(6), markerMaterial);
+		marker = new THREE.Mesh( markerGeo, markerMaterial);
 		scene.add(marker);
 
 		/*var mgeo = new THREE.Geometry();
@@ -150,17 +164,18 @@ var ThreeEngine = function () {
 		var mLine = new THREE.Line( mgeo, mMaterial, THREE.LinePieces );
 		marker.add( mLine );*/
 
-		
-
 		initLights();
 
 		MaxAnistropy = renderer.getMaxAnisotropy();
+
 		if(isReflect) initReflectBall();
 		
 		initMaterial();
 
+		var groundGeo = new THREE.BufferGeometry();
+		groundGeo.fromGeometry( new THREE.PlaneGeometry( 8000,8000 ) );
 		groundMaterial = new THREE.MeshBasicMaterial( { color: 0xFFFFFF, transparent:true, opacity:0.5, blending:THREE.MultiplyBlending} );
-		planeBG = new THREE.Mesh( new THREE.PlaneGeometry( 8000,8000 ), groundMaterial );
+		planeBG = new THREE.Mesh( groundGeo, groundMaterial );
 		planeBG.rotation.x = -90*ToRad;
 		planeBG.position.y = 0.01;
 		planeBG.receiveShadow = true;
@@ -169,49 +184,97 @@ var ThreeEngine = function () {
 		planeBG.visible = false;
 
 		initSea3DMesh();
+
 		moveCamera();
 		
-	    changeView(45,60,1000);
+	    CAM(45,60,1000);
 
 
-		//initPostprocessing();
+		if(postprocessing.enabled)initPostprocessing();
+		
 	    initListener();
 	    
 	    //initBackPlane();
 	    update();
 	}
 
-	
-
 	function initPostprocessing() {
 		var bgPass = new THREE.RenderPass( sceneSky, cameraSky );
 		var renderPass = new THREE.RenderPass( scene, camera );
 		var bokehPass = new THREE.BokehPass( scene, camera, {
-			focus: 		1.0,//1.0,
-			aperture:	0.025,
-			maxblur:	1.0,//1.0,
+			focus: 		1.02,//1.0,
+			aperture:	0.05,//0.025
+			maxblur:	2,//1.0,
 
 			width:  window.innerWidth,
 			height: window.innerHeight
 		} );
 
-		bokehPass.renderToScreen = true;
+		//bokehPass.renderToScreen = true;
 		
 		var colorCorrectionPass = new THREE.ShaderPass( THREE.ColorCorrectionShader );
-		colorCorrectionPass.uniforms[ "powRGB" ].value = new THREE.Vector3( 1.0, 1.0, 1.0 );
+		colorCorrectionPass.uniforms[ "powRGB" ].value = new THREE.Vector3( 1.1, 1.1, 1.1 );
 		colorCorrectionPass.uniforms[ "mulRGB" ].value = new THREE.Vector3( 1.3, 1.3, 1.3 );
+
+		var fxaa = new THREE.ShaderPass( THREE.FXAAShader );
+		fxaa.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+		fxaa.renderToScreen = true;
+
+
+
+		var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+		var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+
+		var depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+		depthMaterial.blending = THREE.NoBlending;
+
+
+
+		var depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+
+		var ssao = new THREE.ShaderPass( THREE.SSAOShader );
+		ssao.uniforms[ 'tDepth' ].value = depthTarget;
+		ssao.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
+		ssao.uniforms[ 'cameraNear' ].value = 1;//camera.near;
+		ssao.uniforms[ 'cameraFar' ].value = 2000;//550;
+		//ssao.uniforms[ 'fogNear' ].value = scene.fog.near;
+		//ssao.uniforms[ 'fogFar' ].value = scene.fog.far;
+		//ssao.uniforms[ 'fogEnabled' ].value = 0;
+		ssao.uniforms[ 'aoClamp' ].value = 0.5;//0.3;
+		ssao.uniforms[ 'lumInfluence' ].value = 0.1//0.1;
+		ssao.renderToScreen = true;
+
+		var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
+		effectCopy.renderToScreen = true;
 		
 		var composer = new THREE.EffectComposer( renderer );
 
-		composer.addPass( bgPass );
+		//composer.addPass( bgPass );
 		composer.addPass( renderPass );
-		composer.addPass( colorCorrectionPass );
-		composer.addPass( bokehPass );
+		//composer.addPass( ssao );
+		composer.addPass( fxaa );
+		//composer.addPass( effectFXAA );
+		//composer.addPass( colorCorrectionPass );
+		//composer.addPass( bokehPass );
+		//composer.addPass( effectCopy );
 		
+		postprocessing.depthMaterial = depthMaterial;
 		postprocessing.composer = composer;
+		postprocessing.depthTarget = depthTarget;
+		postprocessing.fxaa = fxaa;
+
+		postprocessing.ssao = ssao;
+
+
 		postprocessing.colcor = colorCorrectionPass;
 		postprocessing.bokeh = bokehPass;
 
+	}
+
+	function resizePostprocess(){
+		postprocessing.composer.setSize( vsize.x, vsize.y );
+		postprocessing.fxaa.uniforms[ 'resolution' ].value.set( 1 / vsize.x, 1 / vsize.y );
+		postprocessing.ssao.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
 	}
 
 	/*var initBackPlane = function () {
@@ -235,8 +298,8 @@ var ThreeEngine = function () {
 		container.addEventListener( 'mouseout', onMouseUp, false );
 		container.addEventListener( 'mouseup', onMouseUp, false );
 
-		container.addEventListener( 'touchmove', onTouchMove, false );
-		container.addEventListener( 'touchstart', onTouchStart, false);
+		container.addEventListener( 'touchmove', onMouseMove, false );
+		container.addEventListener( 'touchstart', onMouseDown, false);
 		container.addEventListener( 'touchcancel', onMouseUp, false);
 		container.addEventListener( 'touchend', onMouseUp, false);
 
@@ -251,7 +314,7 @@ var ThreeEngine = function () {
 	}
 
 	var basicSky = function (n){
-        var canvas = document.createElement( 'canvas' );
+        var canvas = doc.createElement( 'canvas' );
         canvas.width = canvas.height = 128;
         var ctx = canvas.getContext( '2d' );
         var colors = [];
@@ -348,8 +411,10 @@ var ThreeEngine = function () {
 
 	var changeMaterialType = function(){
 		materialType++;
-		if(isBuffered) {if(materialType==3)materialType=0;}
-		else {if(materialType==4)materialType=0;}
+		//if(isBuffered) {if(materialType==3)materialType=0;}
+		//else {}
+
+		if(materialType==3)materialType=0;
 
 		baseMaterial();
 
@@ -421,6 +486,7 @@ var ThreeEngine = function () {
 			}
 
 			//if(!isOptimized)renderer.shadowMapEnabled = false;
+			//renderer.clear();
 			ballCamera.updateCubeMap( renderer, ballScene );
 			//if(!isOptimized)renderer.shadowMapEnabled = true;
 		}
@@ -461,8 +527,6 @@ var ThreeEngine = function () {
 	var envTexture;
 	var groundMaterial;
 
-	
-
 	var textures = [];
 	var bTextures = [];
 	var poolTextures = [];
@@ -473,8 +537,11 @@ var ThreeEngine = function () {
 		textures[1] = new createDiceTexture(1);
 		textures[2] = new createSnakeTexture();
 		textures[3] = new createWheelTexture(0);
-		textures[4] = new createGyroTexture();
-		textures[5] = new createDroidTexture();
+		textures[4] = THREE.ImageUtils.loadTexture( 'images/gyroscope.jpg' );//new createGyroTexture();
+		textures[5] = THREE.ImageUtils.loadTexture( 'images/droid.jpg' );//new createDroidTexture();
+
+		textures[5].repeat.set( 1, -1 );
+		textures[5].wrapS = textures[5].wrapT = THREE.RepeatWrapping;
 
 		bTextures[0] = new basicTexture(0);
 		bTextures[1] = new basicTexture(1);
@@ -489,7 +556,7 @@ var ThreeEngine = function () {
 			poolTextures[i] = new eightBall(i);
 		}
 
-		debugMaterial = new THREE.MeshBasicMaterial( { color:debugColor, wireframe:true, transparent:true, opacity:debugAlpha} );
+		debugMaterial = new THREE.MeshBasicMaterial( { color:debugColor, wireframe:true, transparent:true, opacity:0, fog: false, depthTest: false, depthWrite: false});//debugAlpha} );
 		jointMaterial = new THREE.LineBasicMaterial( { color: jointColor } );
 		
 		baseMaterial();
@@ -520,7 +587,7 @@ var ThreeEngine = function () {
 		//makeMaterial( { n:12, map: bTextures[7], name:'mat07sleep' } );//12
 		makeMaterial( { n:12, color: 0xb4a56d, name:'mat07sleep' } );//12
 		makeMaterial( { n:13, map: textures[4], name:'matGyro' } );//13
-		makeMaterial( { n:14, map: textures[5], skinning: true, name:'matDroid' } );//14
+		makeMaterial( { n:14, map: textures[5], skinning: true, morphTargets:true, name:'matDroid' } );//14
 		for(var i=0; i!==16; i++){
 			makeMaterial( { n:15+i, map: poolTextures[i], shininess:60, specular:0xffffff, name:'pool'+i } );
 		}
@@ -564,8 +631,6 @@ var ThreeEngine = function () {
 		return mat;
 	}
 
-	
-
 	//-----------------------------------------------------
 	//  CROSSED OIMO FUNCTIONS
 	//-----------------------------------------------------
@@ -575,24 +640,27 @@ var ThreeEngine = function () {
 
 		if( typeof obj.type === 'array' || obj.type instanceof Array ){//___ Compound object
 			if(move) addObjects( obj );
-
 		} else {
 		
 			if(obj.type.substring(0,5) === 'joint'){//_____________ Joint
 				if(obj.type === "jointDistance" || obj.show ) addJoint();
 			}else{
-				if(move){//________________________________________ Dynamic
-					//addObjects( obj.type, obj.size );
-					addObjects( obj );
-				}else{//___________________________________________ Static
-					var mesh = addStaticObjects( obj.type, obj.size );
-					mesh.position.set( obj.pos[0], obj.pos[1], obj.pos[2] );
-					if(obj.rot) mesh.rotation.set( obj.rot[0]*ToRad, obj.rot[1]*ToRad, obj.rot[2]*ToRad );
+				if(obj.type == 'blob'){
+					addBlob( obj );
+				} else {
+					if(move){//________________________________________ Dynamic
+						//addObjects( obj.type, obj.size );
+						if(!obj.hide) addObjects( obj );
+					}else{//___________________________________________ Static
+						var mesh = addStaticObjects( obj.type, obj.size );
+						mesh.position.set( obj.pos[0], obj.pos[1], obj.pos[2] );
+						if(obj.rot) mesh.rotation.set( obj.rot[0]*ToRad, obj.rot[1]*ToRad, obj.rot[2]*ToRad );
+					}
 				}
 			}
 	    }
 		// now create in oimo physic
-		OimoWorker.postMessage({ tell:"ADD", obj:obj });
+		if(obj.type !== 'blob')OimoWorker.postMessage({ tell:"ADD", obj:obj });
 	}
 
 	//-----------------------------------------------------
@@ -666,10 +734,11 @@ var ThreeEngine = function () {
 		    case 2: case 'box': 
 		        mesh=new THREE.Mesh(geo01b, debugMaterial);
 		        mesh.scale.set( s[0], s[1], s[2] );
-		        mesh.visible = false;
+		        //mesh.visible = false;
 		        //mesh=new THREE.Mesh(new THREE.BoxGeometry( s[0], s[1], s[2] ), debugMaterial);
                 helper = new THREE.BoxHelper(mesh);
                 helper.material.color.set( debugColor );
+                //helper.material.depthTest = false;
                 helper.material.opacity = debugAlpha;
                 helper.material.transparent = true;
 		        mesh.add( helper );
@@ -677,7 +746,7 @@ var ThreeEngine = function () {
 		    case 22: case 'ground': 
 		        mesh=new THREE.Mesh(geo01b, debugMaterial);
 		        mesh.scale.set( s[0], s[1], s[2] );
-		        mesh.visible = false;
+		        //mesh.visible = false;
 		        //mesh=new THREE.Mesh(new THREE.BoxGeometry( s[0], s[1], s[2] ), debugMaterial);
                 helper = new THREE.BoxHelper(mesh);
                 helper.material.color.setHex( debugColor );
@@ -743,7 +812,7 @@ var ThreeEngine = function () {
 	    		    mesh=new THREE.Mesh(smoothCube, getMaterial('mat01'));
 	    		    mesh.scale.set( s[0], s[1], s[2] ); 
 	    		break; // box
-	    		case 3: case 'cylinder': mesh=new THREE.Mesh(geo03b, getMaterial('mat03')); mesh.scale.set( s[0], s[1], s[2] ); break; // Cylinder
+	    		case 3: case 'cylinder': mesh=new THREE.Mesh(smoothCyl, getMaterial('mat03')); mesh.scale.set( s[0], s[1], s[2] ); break; // Cylinder
 
 	    		case 4: case 'dice': mesh=new THREE.Mesh(diceBuffer, getMaterial('mat04')); mesh.scale.set( s[0], s[1], s[2] ); break; // dice
 	    		case 5: case 'wheel':
@@ -762,7 +831,7 @@ var ThreeEngine = function () {
 	    		case 10: case 'bone':
 	    		    mesh = new THREE.Object3D();
 	    		    var Bmat = new THREE.MeshBasicMaterial( { map: bonesFlag(boneindex), side:THREE.DoubleSide } );
-	    		    meshFlag=new THREE.Mesh(geo00, Bmat ); 
+	    		    meshFlag=new THREE.Mesh(geo00b, Bmat ); 
 	    		    mesh.scale.set( s[0], s[1], s[2] ); 
 	    		    mesh.add(meshFlag);
 
@@ -799,7 +868,8 @@ var ThreeEngine = function () {
 	    		break;
 	    		case 13: case 'carBody':
 	    		    mesh = new THREE.Mesh(carBodyBuffer, getMaterial('mat02')); 
-	    		    mesh.scale.set( 100, 100, 100 );
+	    		   // mesh.scale.set( 100, 100, 100 );
+	    		    mesh.scale.set( 1, 1, 1 );
 	    		    followObject = mesh;
 	    		break;
 	    		case 14: case 'vanBody':
@@ -841,14 +911,23 @@ var ThreeEngine = function () {
 			        mesh.add( helper );
 			        helper.name = "helpDroid";*/
 
-	    		    player = getMeshByName('Android');
+	    		    player = getMeshByName('droid');
 	    		    player.material = getMaterial('matDroid');
-	    		    player.play("Idle");
+	    		    
+	    		    var i = player.animations.length;
+	    		    while(i--){
+	    		    	name = player.animations[i].name;
+	    		    	player.animations[name].weight = 0;
+	    		    	player.animations[name].play( 0, 0 );
+	    		    }
+	    		    player.animations['idle'].weight = 1;//play(0,1);
+	    		    player.setWeight("droid001", 0.5);
+
 	    		    player.scale.set( 2, 2, -2 );
-	    		    player.position.y = 60;
+	    		    player.position.set(0,0,0);
 	    		    contentSpecial.add(player);
 		    		followSpecial = "droid";
-		    		name = "droid";;
+		    		name = "droid";
 		    		followObject = mesh;
 		    		resetPlayer();
 	    		break;
@@ -883,8 +962,8 @@ var ThreeEngine = function () {
         for(var i=0; i<types.length; i++){
             n = i*3;
             if(types[i]=='cylinder') g = geo03;
-            else if(types[i]=='sphere') g = geo02;
-            else g =  geo06 ;
+            else if(types[i]=='sphere') new THREE.SphereGeometry( 1 , 20, 10 );//g = geo02;
+            else g = new THREE.BoxGeometry( 1, 1, 1 );// geo06 ;
 
             /*mesh.scale.set( sizes[n+0], sizes[n+1], sizes[n+2] );
             if(i===0) mesh.position.set( 0, 0, 0 );
@@ -893,15 +972,11 @@ var ThreeEngine = function () {
             if(i===0) m = new THREE.Matrix4().makeTranslation(0, 0, 0);
             else  m = new THREE.Matrix4().makeTranslation(positions[n+0], positions[n+1], positions[n+2]);
             m.scale(new THREE.Vector3(sizes[n+0], sizes[n+1], sizes[n+2]));
-
-            //THREE.GeometryUtils.merge( geometry, mesh );
             geometry.merge(g,m);
         }
 
-        var geo;
-
-        if(isBuffered) geo = THREE.BufferGeometryUtils.fromGeometry( geometry );
-        else geo = geometry;
+        var geo = new THREE.BufferGeometry();
+        geo.fromGeometry( geometry );
 
         return new THREE.Mesh(geo, material);
     }
@@ -936,6 +1011,13 @@ var ThreeEngine = function () {
 			contentSpecial.remove(contentSpecial.children[ i ]);
 		}
 
+		if(blobs!==null){
+			blobs.reset();
+			//blobs.geometry.dispose();
+			contentSpecial.remove(blobs);
+			blobs = null;
+		}
+
 		/*var obj, i;
 	    for ( i = content.children.length - 1; i >= 0 ; i -- ) {
 				obj = content.children[ i ];
@@ -946,6 +1028,71 @@ var ThreeEngine = function () {
 		planeBG.position.set(0, 0.01, 0);
 		maxms = 0;
 	}
+
+	//-----------------------------------
+	// BLOB DEMO
+	//-----------------------------------
+
+	var blobSetting = { strength:2, subtract:12 };
+
+	var addBlob = function(o){
+		blobs = new THREE.MarchingCubes( o.resolution || 24, getMaterial('mat01'), true, true );
+	    blobs.position.set( o.pos[0] || 0, o.pos[1] || 0, o.pos[2] || 0 );
+	    blobs.scale.set( o.size[0] || 100, o.size[1] || 100, o.size[2] || 100 );
+
+	    blobSetting.strength = o.strength || 2;
+	    blobSetting.subtract = o.subtract || 12;
+	    blobSetting.size = o.size;
+	    
+	    contentSpecial.add(blobs);
+	}
+
+	var updateBlob = function( m ) {
+		var o = blobSetting;
+
+		blobs.reset();
+
+		var i = m.length;
+		var subtract = o.subtract;//12;
+		var strength = o.strength;// / ( ( Math.sqrt( i ) - 1 ) / 4 + 1 );
+		var x = (o.size[0]);
+		var y = (o.size[1]);
+		var z = (o.size[2]);
+		var sx = (o.size[0]*2);
+		var sy = (o.size[1]*2);
+		var sz = (o.size[2]*2);
+
+    	while (i--) {
+    		//mtx.fromArray( m[i] );
+    		blobs.addBall(((m[i][12]+x)/sx), ((m[i][13]+y)/sy), ((m[i][14]+z)/sz), strength, subtract);
+    	}
+
+    	blobs.addPlaneY( o.strength, o.subtract );
+
+		// fill the field with some metaballs
+
+		/*var i, ballx, bally, ballz, subtract, strength;
+		subtract = 12;
+		strength = 1.2 / ( ( Math.sqrt( numblobs ) - 1 ) / 4 + 1 );
+
+		for ( i = 0; i < numblobs; i ++ ) {
+
+			ballx = Math.sin( i + 1.26 * time * ( 1.03 + 0.5 * Math.cos( 0.21 * i ) ) ) * 0.27 + 0.5;
+			bally = Math.abs( Math.cos( i + 1.12 * time * Math.cos( 1.22 + 0.1424 * i ) ) ) * 0.77; // dip into the floor
+			ballz = Math.cos( i + 1.32 * time * 0.1 * Math.sin( ( 0.92 + 0.53 * i ) ) ) * 0.27 + 0.5;
+
+			blobs.addBall(ballx, bally, ballz, strength, subtract);
+
+		}
+
+		if ( floor ) blobs.addPlaneY( 2, 12 );
+		if ( wallz ) blobs.addPlaneZ( 2, 12 );
+		if ( wallx ) blobs.addPlaneX( 2, 12 );*/
+	}
+
+	//-----------------------------------
+	// SNAKE
+	//-----------------------------------
 
 	var addSnake = function (s) {
 		if(s==null) s = [10,10,10];
@@ -977,6 +1124,10 @@ var ThreeEngine = function () {
 			mesh.skeleton.bones[i].matrixWorldNeedsUpdate = true;
 		}
 	}
+
+	//-----------------------------------
+	// SILA
+	//-----------------------------------
 
 	// for ragdoll test
 	var addSila = function (s) {
@@ -1079,8 +1230,6 @@ var ThreeEngine = function () {
 		lights[0] = new THREE.AmbientLight( 0x555557 );
 		scene.add(lights[0]);
 
-
-
 		//if(isOptimized) return
 
 		lights[1] = new THREE.DirectionalLight( 0xffffff, 1.3 );
@@ -1126,18 +1275,10 @@ var ThreeEngine = function () {
 	//  DEFINE FINAL GEOMETRY
 	//-----------------------------------------------------
 
-	var geo00 = new THREE.PlaneGeometry( 1, 1 );
-	var geo01 = new THREE.BoxGeometry( 1, 1, 1 );
-	var geo02 = new THREE.SphereGeometry( 1, 32, 16 );
-	//var geo03 = new THREE.CylinderGeometry( 1, 1, 1, 16 );
-	var geo04 = new THREE.SphereGeometry( 1, 32, 16 );
-	var geo05 = new THREE.SphereGeometry( 1, 12, 8 );
-	var geo06;
-	var geoBullet =  new THREE.SphereGeometry(1,12,8);
-
-	var geo00b,geo01b,geo02b,geo03b,geo04b,geo05b, geoBulletb;
+	var geo00b,geo01b,geo02b,geo04b,geo05b, geoBulletb;
 	var cyl1, cyl2;
 	var smoothCube;
+	var smoothCyl;
 	var diceBuffer;
 	var colomnBuffer;
 	var colomnBaseBuffer;
@@ -1156,73 +1297,74 @@ var ThreeEngine = function () {
 	var gyroBuffer2;
 	var gyroBuffer3;
 
-	
-
 	var defineGeometry = function(){
-		var sbox = getSeaGeometry('box');
-		geo06 = sbox.clone();
-		if(isBuffered){
-			geo00b = THREE.BufferGeometryUtils.fromGeometry( geo00 );
-			geo01b = THREE.BufferGeometryUtils.fromGeometry( geo01 );
-			geo02b = THREE.BufferGeometryUtils.fromGeometry( geo02 );
-			geo03b = THREE.BufferGeometryUtils.fromGeometry( getSeaGeometry('cyl') );
-			geo04b = THREE.BufferGeometryUtils.fromGeometry( geo04 );
-			geo05b = THREE.BufferGeometryUtils.fromGeometry( geo05 );
-			geoBulletb = THREE.BufferGeometryUtils.fromGeometry( getSeaGeometry('bullet') );
-			//smoothCube = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('box'));
-			smoothCube = THREE.BufferGeometryUtils.fromGeometry(sbox.clone());
-			diceBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('dice'));
-			colomnBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('column'));
-			colomnBaseBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('columnBase'));
-			colomnTopBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('columnTop'));
-			carBodyBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('carBody'));
-			carWheelBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('wheel'));
-			vanWheelBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('vanWheel'));
-			vanBodyBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('vanBody', 1, 'x'));
-			vanBottomLeftBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('vanBody', 1, 'z',1));
-			vanBottomRightBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('vanBody', 1, 'z', 2));
-			vanFrontBuffer = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('vanBody', 1, 'x', 3));
 
-			gyroBuffer0 = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('gyro', 1, 'x'));
-			gyroBuffer1 = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('gyro', 1, 'z', 1));
-			gyroBuffer2 = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('gyro', 1, 'z', 1, 1));
-			gyroBuffer3 = THREE.BufferGeometryUtils.fromGeometry(getSeaGeometry('gyro', 1, 'x', 1, 2));
+		geo00b = new THREE.BufferGeometry();
+        geo00b.fromGeometry( new THREE.PlaneGeometry( 1, 1 ) );
 
-	    } else {
-	    	geo00b = geo00;
-			geo01b = geo01;
-			geo02b = geo02;
-			geo03b = getSeaGeometry('cyl') ;
-			geo04b = geo04;
-			geo05b = geo05;
-			geoBulletb = getSeaGeometry('bullet');
-	    	smoothCube = sbox.clone();//getSeaGeometry('box');
-	    	diceBuffer = getSeaGeometry('dice');
-			colomnBuffer = getSeaGeometry('column');
-			colomnBaseBuffer = getSeaGeometry('columnBase');
-			colomnTopBuffer = getSeaGeometry('columnTop');
-			carBodyBuffer = getSeaGeometry('carBody');
-			carWheelBuffer = getSeaGeometry('wheel');
-			vanWheelBuffer = getSeaGeometry('vanWheel');
-			vanBodyBuffer = getSeaGeometry('vanBody',1, 'x');
-			vanBottomLeftBuffer = getSeaGeometry('vanBody',1, 'z', 0);
-			vanBottomRightBuffer = getSeaGeometry('vanBody',1, 'z', 1);
-			vanFrontBuffer = getSeaGeometry('vanBody',1, 'x', 2);
+        geo01b = new THREE.BufferGeometry();
+        geo01b.fromGeometry( new THREE.BoxGeometry( 1, 1, 1 ) );
 
-			gyroBuffer0 = getSeaGeometry('gyro', 1, 'x');
-			gyroBuffer1 = getSeaGeometry('gyro', 1, 'z', 1);
-			gyroBuffer2 = getSeaGeometry('gyro', 1, 'z', 1, 1);
-			gyroBuffer3 = getSeaGeometry('gyro', 1, 'x', 1, 2);
-	    }
+        geo02b = new THREE.BufferGeometry();
+        geo02b.fromGeometry( new THREE.SphereGeometry( 1, 22, 16 ) );//( 1, 32, 16 ) );
+
+        geo04b = new THREE.BufferGeometry();
+        geo04b.fromGeometry( new THREE.SphereGeometry( 1, 32, 16 ) );
+
+        geo05b = new THREE.BufferGeometry();
+        geo05b.fromGeometry( new THREE.SphereGeometry( 1, 12, 8 ) );
+
+		smoothCyl = getSeaGeometry('cyl');
+		geoBulletb = getSeaGeometry('bullet');
+		smoothCube = getSeaGeometry('box');
+		diceBuffer = getSeaGeometry('dice');
+		colomnBuffer = getSeaGeometry('column');
+		colomnBaseBuffer = getSeaGeometry('columnBase');
+		colomnTopBuffer = getSeaGeometry('columnTop');
+		carBodyBuffer = getSeaGeometry('carBody');
+		carWheelBuffer = getSeaGeometry('wheel');
+		vanWheelBuffer = getSeaGeometry('vanWheel');
+		vanBodyBuffer = getSeaGeometry('vanBody', 1, 'x');
+		vanBottomLeftBuffer = getSeaGeometry('vanBody', 1, 'z',1);
+		vanBottomRightBuffer = getSeaGeometry('vanBody', 1, 'z', 3);
+		vanFrontBuffer = getSeaGeometry('vanBody', 1, 'x', 2);
+
+		gyroBuffer0 = getSeaGeometry('gyro', 1, 'x');
+		gyroBuffer1 = getSeaGeometry('gyro', 1, 'z', 1);
+		gyroBuffer2 = getSeaGeometry('gyro', 1, 'z', 1, 1);
+		gyroBuffer3 = getSeaGeometry('gyro', 1, 'x', 1, 2);
+	}
+
+	var capsuleGeometry = function(radius, height, SRadius, SHeight) {
+	    /*types = [ 'sphere', 'sphere','sphere'];
+        sizes = [ radius, radius,radius,radius, radius,radius,radius, radius,radius ];
+        positions = [0,0,0,   0,height*0.5,0, 0,height,0];*/
+        sRadius = SRadius || 20;
+        sHeight = SHeight || 10;
+        var o0 = Math.PI*2;
+        var o1 = Math.PI/2;
+        var g = new THREE.Geometry();
+        var m0 = new THREE.CylinderGeometry(radius, radius, height, sRadius, 1, true);
+        var m1 = new THREE.SphereGeometry(radius, sRadius, sHeight, 0, o0, 0, o1);
+        var m2 = new THREE.SphereGeometry(radius, sRadius, sHeight, 0, o0, o1, o1);
+        var mtx0 = new THREE.Matrix4().makeTranslation(0, 0,0);
+        var mtx1 = new THREE.Matrix4().makeTranslation(0, height*0.5,0);
+        var mtx2 = new THREE.Matrix4().makeTranslation(0, -height*0.5,0);
+        g.merge( m0, mtx0);
+        g.merge( m1, mtx1);
+        g.merge( m2, mtx2);
+        var capsuleGeometry = new THREE.BufferGeometry();
+        return capsuleGeometry.fromGeometry(g);
 	}
 
 	//-----------------------------------------------------
 	//  SEA3D IMPORT
 	//-----------------------------------------------------
 
-	var seaList = ['dice_low', 'snake', 'wheel', 'column', 'sila', 'gyro', 'van', 'geo','droid'];
+	var seaList = ['geo', 'snake', 'sila', 'gyro', 'droid'];
 	var seaN = 0;
-
+  var allObjectLoaded = () => {}; //dummy holder for self.allObjectLoaded()
+  
 	var initSea3DMesh = function (){
 		var name = seaList[seaN];
 		//pool = new SEA3D.Pool('res/model/droid.sea', populate)
@@ -1237,17 +1379,21 @@ var ThreeEngine = function () {
 			if(seaList[seaN]!=null)initSea3DMesh();
 			else{
 				defineGeometry();
-				mainAllObjectLoaded();
+        window.objectsAreLoaded = true;
+				self.allObjectLoaded();
 				isLoading = false;
 			} 
 		}
-
+		//SeaLoader.parser = THREE.SEA3D.BUFFER;
+		//SeaLoader.parser = THREE.SEA3D.DEFAULT;
 		SeaLoader.load( PATH+'models/'+name+'.sea' );
 		//loadInfo.innerHTML = "Loading sea3d model : "+ name;
-		document.getElementById("output").innerHTML = "Loading sea3d model : "+ name;
+		//doc.getElementById("output").innerHTML
+		//output = "Loading sea3d model : "+ name;
+		Interface.log("Loading sea3d model : "+ name)
 	}
 
-	var getSeaGeometry = function (name, scale, axe, child, deep){
+	var getGeometry = function (name, scale, axe, child, deep){
 		var c = child || 0;
 		var d = deep || 0;
 		var a = axe || "z";
@@ -1261,6 +1407,26 @@ var ThreeEngine = function () {
 		return m;
 	}
 
+	var getSeaGeometry = function (name, scale, axe, child, deep){
+		var c = child || 0;
+		var d = deep || 0;
+		var a = axe || "z";
+		var s = scale || 1;
+		var m; 
+		if(c === 0 && d === 0) m = getMeshByName(name).geometry;
+		else if(c >= 1 && d === 0) m = getMeshByName(name).children[c-1].geometry;
+		else if(c >= 1 && d === 1) m = getMeshByName(name).children[0].children[c-1].geometry;
+		else if(c >= 1 && d === 2) m = getMeshByName(name).children[0].children[0].children[c-1].geometry;
+		scaleGeometry(m, s, a);
+
+		//var geo = new THREE.BufferGeometry();
+        //geo.fromGeometry( m );
+
+        return m;//geo;
+		//if(isBuffered) return THREE.BufferGeometryUtils.fromGeometry(m);
+		//else return m;
+	}
+
 	var getMeshByName = function (name){
 		for (var i=0; i !== meshs.length; i++){
 			if(meshs[i].name === name){
@@ -1271,19 +1437,14 @@ var ThreeEngine = function () {
 
 	var scaleGeometry = function (geometry, scale, Axe) {
 		var s = 1;//scale || 1;
-		var axe = Axe || 'z' 
-		for( var i = 0; i < geometry.vertices.length; i++) {
-			var vertex	= geometry.vertices[i];
-			if(axe==='x')vertex.x *= -s;
-			else vertex.x *= s;
-			if(axe==='y')vertex.y *= -s;
-			else vertex.y *= s;
-			if(axe==='z')vertex.z *= -s;
-			else vertex.z *= s;
-		}
-		geometry.computeFaceNormals();
-		geometry.computeVertexNormals();
-		geometry.verticesNeedUpdate = true;
+		var axe = Axe || 'z';
+		var mtx = new THREE.Matrix4();
+		switch(axe){
+            case 'x': mtx.makeScale(-s, s, s); break;
+            case 'y': mtx.makeScale(s, -s, s); break;
+            case 'z': mtx.makeScale(s, s, -s); break;
+        }
+        geometry.applyMatrix(mtx);
 	}
 
 	//-----------------------------------------------------
@@ -1308,13 +1469,12 @@ var ThreeEngine = function () {
 	//-----------------------------------------------------
 
 	var update = function () {
-		requestAnimationFrame( update, renderer.domElement );
+		
 
 		startTime = Date.now();
 
 		var delta = clock.getDelta();
 		
-
 		if(followObject) cameraFollow(followObject.position);
 
 		if(followSpecial === 'gyro'){
@@ -1330,25 +1490,33 @@ var ThreeEngine = function () {
 			movePlayer(delta);
 		}
 		
-
 		// test 
 		/*looker.position.copy(center);
 		looker.position.y = 10;
 		var dir=Math.atan2(center.z-marker.position.z,center.x-marker.position.x);
 		looker.rotation.y = -dir+(90*ToRad);*/
 
-
 		//renderer.render( sceneSky, cameraSky );
 		//renderer.render( scene, camera );
 
 		if ( postprocessing.enabled ) {
+			/*var i=content.children.length;
+			while (i--) {
+				if(content.children[ i ].material){
+					content.children[ i ].material= postprocessing.depthMaterial
+				}
+			}*/
 
-			postprocessing.composer.render( 0.1 );
+			//renderer.clear();
+			//scene.overrideMaterial = postprocessing.depthMaterial;
+			renderer.render( scene, camera, postprocessing.depthTarget );
+			//content.overrideMaterial = null;
+			postprocessing.composer.render();// 0.1 );
 
 		} else {
 
 			//renderer.clear();
-			renderer.render( sceneSky, cameraSky );
+			if(isDiffBackgroud) renderer.render( sceneSky, cameraSky );
 			renderer.render( scene, camera );
 
 		}
@@ -1360,6 +1528,8 @@ var ThreeEngine = function () {
 	    if(ms > maxms)maxms = ms;
 	    if (time - 1000 > time_prev) { time_prev = time; fpstxt = fps; fps = 0; } 
 	    fps++;
+
+	    requestAnimationFrame( update, renderer.domElement );
 	}
 
 
@@ -1379,7 +1549,7 @@ var ThreeEngine = function () {
 	}
 
 	var resetPlayer = function (){
-		playerSet = {animation:'Idle', x:0, z:0, r:0, destX:0, destZ:0, maxSpeed:0.02, speed:0, acc:0.001, decay:0.9};
+		playerSet = {animation:'idle', x:0, z:0, r:0, destX:0, destZ:0, maxSpeed:0.02, speed:0, acc:0.001, decay:0.9};
 		playeroldpos = {x:0, z:0, r:0};
 	}
 
@@ -1389,17 +1559,29 @@ var ThreeEngine = function () {
 			playerSet.destX = marker.position.x;
 			playerSet.destZ = marker.position.z;
 			if (playerSet.speed < playerSet.maxSpeed) playerSet.speed += playerSet.acc;
-			if(playerSet.animation === 'Idle'){ playerSet.animation = 'Walk'; player.play(playerSet.animation);}
+			if(playerSet.animation === 'idle'){ 
+				playerSet.animation = 'walk';
+				player.animations['walk'].weight =1;//play(0,1);//player.play(playerSet.animation);
+				player.animations['idle'].weight =0;
+
+		}
 		}else{
 			if (playerSet.speed > 0.001) playerSet.speed *= playerSet.decay;
-			else{ playerSet.speed = 0; if(playerSet.animation === 'Walk'){ playerSet.animation = 'Idle';player.play(playerSet.animation);} }	
+			else{ playerSet.speed = 0; if(playerSet.animation === 'walk'){ 
+				playerSet.animation = 'idle';
+				//player.play(playerSet.animation);
+				player.animations['walk'].weight =0;
+				player.animations['idle'].weight =1;
+
+			} }	
 		}
 
 		playerSet.x += (playerSet.destX - playerSet.x) * playerSet.speed;
 		playerSet.z += (playerSet.destZ - playerSet.z) * playerSet.speed;
 		playerSet.r = (-Math.atan2(playerSet.z-marker.position.z,playerSet.x-marker.position.x));
 
-        THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
+    
+    THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
 
 		//the unit for velocity is [m/s] so you should devide movement amount by movement duration
 		var v = { 
@@ -1509,7 +1691,6 @@ var ThreeEngine = function () {
 			if ( intersectsBack.length || intersects.length ) {
 				if(!marker.visible) marker.visible=true;
 				
-
 				if ( intersectsBack.length ) {
 					if(markerMaterial.color!==0x888888)markerMaterial.color.setHex(0x888888);
 					point = intersectsBack[0].point;
@@ -1528,38 +1709,38 @@ var ThreeEngine = function () {
 					//console.log("intersects.length: "+ intersects.length);
 					//console.log("intersects.distance: "+ intersects[0].distance);
 					//console.log("intersects.face: "+ intersects[0].face);
-					point = intersects[0].point;
+					point = intersects[0].point; 
+          
+          let normal = intersects[0].face.normal;
+          let normalMatrix = new THREE.Matrix3().getNormalMatrix( intersects[0].object.matrixWorld );
+          normal = normal.clone().applyMatrix3( normalMatrix ).normalize();
+          
 					marker.position.copy( point );
 					//if(intersects[0].face!==null)marker.lookAt(intersects[0].face.normal);
 					selected = intersects[0].object;
 					selectedCenter = point;
 
 					//attachControl(selected);
-
-					if(mouse.down){
+					if(mouse.down && mouse.button===1){
 						switch(mouseMode[mMode]){
 							case 'delete': OimoWorker.postMessage({tell:"REMOVE", type:'object', n:selected.name}); break;
-							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[point.x, point.y, point.z]}); break;
+							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[-normal.x, -normal.y, -normal.z], pos:[point.x, point.y, point.z] }); break;
 
 							case 'drag': 
-							    var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
+							    //look onMouseMove function
+                  //var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
 							break;
 							
-						
-
-
 						}
-				    }
-			    }
-			    if(mouseMode[mMode]==='shoot' && mouse.press){
-			    	mouse.press = false;
-					shoot(camera.position,point);
-				}
-
-
-		    } else {
-		    	marker.visible = false;
-		    }
+				  }
+			  }
+        if(mouseMode[mMode]==='shoot' && mouse.press){
+          mouse.press = false;
+          shoot(camera.position,point);
+        }
+      } else {
+        marker.visible = false;
+      }
 		}
 	}
 
@@ -1570,10 +1751,10 @@ var ThreeEngine = function () {
 	var shoot = function ( p0, p1 ) {
 		var n = content.children.length;
 		var bullet = new THREE.Mesh( geoBulletb, getMaterial('bullet') );
-		bullet.scale.set( 30, 30, 30 ); 
+    bullet.scale.set( 30, 30, 30 ); 
 		bullet.position.y = 10000;
 		bullet.receiveShadow = true;
-	    bullet.castShadow = true;
+	  bullet.castShadow = true;
 		bullet.name = n;
 
 		var impulse = p1.sub(p0);
@@ -1596,7 +1777,6 @@ var ThreeEngine = function () {
 			var i = bullets.length;
 			while(i--){
 				if(bullets[i].position.y < -200){
-					
 					OimoWorker.postMessage({tell:"REMOVE", type:'object', n:bullets[i].name});
 					bullets.splice(i,1);
 				}
@@ -1625,86 +1805,79 @@ var ThreeEngine = function () {
 
 	var onMouseDown = function (e) {
 		e.preventDefault();
-		mouse.ox = e.clientX;
-		mouse.oy = e.clientY;
+		var px, py;
+	    if(e.touches){
+	        px = e.clientX || e.touches[ 0 ].pageX;
+	        py = e.clientY || e.touches[ 0 ].pageY;
+	    } else {
+	        px = e.clientX;
+	        py = e.clientY;
+	        // 0: default  1: left  2: middle  3: right
+	        mouse.button = e.which;
+	    }
+		mouse.ox = px;
+		mouse.oy = py;
 		mouse.h = camPos.horizontal;
 		mouse.v = camPos.vertical;
-		mouse.mx = ( e.clientX / vsize.x ) * 2 - 1;
-		mouse.my = - ( e.clientY / vsize.y ) * 2 + 1;
+		mouse.mx = ( px / vsize.x ) * 2 - 1;
+		mouse.my = - ( py / vsize.y ) * 2 + 1;
 		mouse.down = true;
-		if(mouseMode[mMode]==='shoot')mouse.press = true;
-		rayTest();
+		if(mouseMode[mMode]==='shoot' && mouse.button === 1)mouse.press = true;
 		if(followSpecial === 'droid')setPlayerDestination();
+		rayTest();
 	}
 
 	var onMouseUp = function (e) {
 		mouse.down = false;
-		document.body.style.cursor = 'auto';
+		doc.body.style.cursor = 'auto';
 	}
 
+  var old_mx, old_my = 0;
 	var onMouseMove = function (e) {
 		e.preventDefault();
-		mouse.mx = ( e.clientX / vsize.x ) * 2 - 1;
-		mouse.my = -( e.clientY / vsize.y ) * 2 + 1;
+		var px, py;
+    if(e.touches){
+        px = e.clientX || e.touches[ 0 ].pageX;
+        py = e.clientY || e.touches[ 0 ].pageY;
+    } else {
+        px = e.clientX;
+        py = e.clientY;
+    }  
+    mouse.mx = ( px / vsize.x ) * 2 - 1;
+		mouse.my = -( py / vsize.y ) * 2 + 1;
 		rayTest();
-
-		if (mouse.down && !camPos.automove ) {
-			if (mouse.moving) {
-				document.body.style.cursor = 'move';
-				camPos.horizontal = ((e.clientX - mouse.ox) * 0.3) + mouse.h;
-				camPos.vertical = (-(e.clientY - mouse.oy) * 0.3) + mouse.v;
+    
+		if (mouse.down && !camPos.automove && mouse.moving) {
+			if (e.button === 2) {
+				doc.body.style.cursor = 'move';
+				camPos.horizontal = ((px - mouse.ox) * 0.3) + mouse.h;
+				camPos.vertical = (-(py - mouse.oy) * 0.3) + mouse.v;
+        camPos.vertical = Math.max( Math.min(camPos.vertical, 179.9), 0.01 );
 				moveCamera();
-			}/* else {
-				mouse.mx = ( e.clientX / vsize.x ) * 2 - 1;
-		    	mouse.my = -( e.clientY / vsize.y ) * 2 + 1;
-		    	rayTest();
-			}*/
+			}
+      else if(e.button === 0 && mouseMode[mMode] === 'drag'){
+        let off = new THREE.Vector3( -(mouse.mx - old_mx)*camPos.distance, -(mouse.my - old_my)*camPos.distance, 0);
+        off.applyAxisAngle(new THREE.Vector3(-1,0,0), (90 - mouse.v) * Math.PI/180);
+        off.applyAxisAngle(new THREE.Vector3(0,1,0), (90 - mouse.h) * Math.PI/180);
+        center.x += off.x;
+        center.y += off.y;
+        center.z += off.z;
+        moveCamera();
+      }
 		}
+    
+    old_mx = mouse.mx;
+		old_my = mouse.my;  
 	}
 
 	var onMouseWheel = function (e) {
-		var delta = 0;
+    var delta = 0;
 		if(e.wheelDeltaY){delta=e.wheelDeltaY*0.01;}
 		else if(e.wheelDelta){delta=e.wheelDelta*0.05;}
 		else if(e.detail){delta=-e.detail*1.0;}
-		camPos.distance-=(delta*10);
+		camPos.distance-=(delta*100);
+    camPos.distance = Math.max(camPos.distance, 0.1);
 		moveCamera();
-	}
-
-	//-----------------------------------------------------
-	//  TOUCH MOBIL
-	//-----------------------------------------------------
-
-	var onTouchStart = function (e) { 
-		e.preventDefault();
-		var t=event.touches[0];
-		mouse.ox = t.clientX;
-		mouse.oy = t.clientY;
-		mouse.h = camPos.horizontal;
-		mouse.v = camPos.vertical;
-		mouse.mx = ( t.clientX / vsize.x ) * 2 - 1;
-		mouse.my = -( t.clientY / vsize.y ) * 2 + 1;
-		mouse.down = true;
-		rayTest();
-	}
-
-	var onTouchMove = function (e) { 
-		e.preventDefault();
-		var t=event.touches[0];
-		mouse.mx = ( t.clientX / vsize.x ) * 2 - 1;
-		mouse.my = -( t.clientY / vsize.y ) * 2 + 1;
-		rayTest();
-	    if (mouse.down && !camPos.automove ) {
-		    if (mouse.moving) {
-				document.body.style.cursor = 'move';
-				camPos.horizontal = ((t.clientX - mouse.ox) * 0.3) + mouse.h;
-				camPos.vertical = (-(t.clientY - mouse.oy) * 0.3) + mouse.v;
-				moveCamera();
-			}/* else {
-				mouse.mx = ( t.clientX / vsize.x ) * 2 - 1;
-		    	mouse.my = -( t.clientY / vsize.y ) * 2 + 1;
-			}*/
-	    }
 	}
 
 	//-----------------------------------------------------
@@ -1718,18 +1891,26 @@ var ThreeEngine = function () {
 		camera.position.copy(Orbit(center, camPos.horizontal, camPos.vertical, camPos.distance, true));
 		camera.lookAt(center);
 
-		cameraSky.position.copy(camera.position);
-		cameraSky.lookAt(center);
+		if(isDiffBackgroud){
+			cameraSky.position.copy(camera.position);
+	     	cameraSky.lookAt(center);
+	    }
 	}
 
 	var endMove = function () {
 		camPos.automove = false;
 	}
 
-	var changeView = function (h, v, d) {
-		TweenLite.to(camPos, 3, {horizontal: h, vertical: v, distance: d, onUpdate: moveCamera, onComplete: endMove });
+	var CAM = function (h, v, d) {
+		//unwarpCam();
+		TweenLite.to(camPos, 1, {horizontal: h, vertical: v, distance: d, onUpdate: moveCamera, onComplete: endMove });
 		camPos.automove = true;
 	}
+
+	/*var unwarpCam= function (){
+		camPos.horizontal = unwrapDegrees(camPos.horizontal);
+		camPos.vertical = unwrapDegrees(camPos.vertical);
+	}*/
 
 	var cameraFollow = function (vec) {
 		center.copy(vec);
@@ -1740,7 +1921,7 @@ var ThreeEngine = function () {
 
 	var switchView = function () {
 		var n = currentView;
-		changeView(vSet[n].h, vSet[n].v, vSet[n].d);
+		CAM(vSet[n].h, vSet[n].v, vSet[n].d);
 		currentView++;
 		if(currentView === vSet.length) currentView = 0;
 	}
@@ -1754,10 +1935,12 @@ var ThreeEngine = function () {
 		vsize.z = vsize.x/vsize.y;
 		camera.aspect = vsize.z;
 		camera.updateProjectionMatrix();
-		cameraSky.aspect = vsize.z;
-		cameraSky.updateProjectionMatrix();
+		if(isDiffBackgroud){
+			cameraSky.aspect = vsize.z;
+		    cameraSky.updateProjectionMatrix();
+		}
 		renderer.setSize( vsize.x, vsize.y );
-		if ( postprocessing.enabled ) postprocessing.composer.setSize( vsize.x, vsize.y );
+		if ( postprocessing.enabled ) resizePostprocess();
 	}
 
 	var viewDivid = function () {
@@ -1787,8 +1970,16 @@ var ThreeEngine = function () {
 	var Orbit = function (origine, horizontal, vertical, distance, MainCamera) {
 		var mainCamera = MainCamera || false;
 		var p = new THREE.Vector3();
-		var phi = unwrapDegrees(vertical)*ToRad;
-		var theta = unwrapDegrees(horizontal)*ToRad;
+		var phi, theta;
+		if(mainCamera){
+			camPos.horizontal = unwrapDegrees(camPos.horizontal);
+			camPos.vertical = unwrapDegrees(camPos.vertical);
+			phi = camPos.vertical*ToRad;
+		  theta = camPos.horizontal*ToRad;
+		} else{
+			phi = vertical*ToRad;
+		  theta = horizontal*ToRad;
+		}
 		if(mainCamera){
 			camPos.phi = phi; camPos.theta = theta;
 			sendCameraOrientation(phi, theta);
@@ -1818,11 +2009,8 @@ var ThreeEngine = function () {
 		return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 	}
 
-
-
 	// public methode
-
-	return {
+  var self = {
 
 		domElement: container,
 
@@ -1851,13 +2039,15 @@ var ThreeEngine = function () {
 		removeObject:removeObject,
 
 		viewDivid:viewDivid,
-		changeView:changeView,
+		CAM:CAM,
 
 		//options
 		reflection:reflection,
 		debug:debug,
 		shadow:shadow,
 		changeMaterialType:changeMaterialType,
+
+		updateBlob:updateBlob,
 
 		getViewMode: function () {
 			return vmid.mode;
@@ -1868,7 +2058,7 @@ var ThreeEngine = function () {
 			if(mMode === mouseMode.length) mMode = 0;
 		},
 		getMouseMode: function () {
-			return 'mouse ' + mouseMode[mMode];
+			return mouseMode[mMode];
 		},
 		getFps: function (name) {
 			return fpstxt +" fps / "+ ms+" ms"//+"/"+maxms+" ms";
@@ -1879,6 +2069,24 @@ var ThreeEngine = function () {
 		getAnistropy: function (name) {
 			return MaxAnistropy;
 		},
+    mapMaterial: function (meshName, sleeps){ 
+      meshName = sleeps? meshName.substr(0,5) + "sleep" : meshName.substr(0,5); 
+      switch( meshName ){
+        case "mat01": return this.materials[0];      
+        case "mat01sleep": return this.materials[8];
+        case "mat02": return this.materials[1];
+        case "mat02sleep": return this.materials[9];
+        case "mat03": return this.materials[2];
+        case "mat03sleep": return this.materials[10];  
+        case "mat04": return this.materials[3];
+        case "mat04sleep": return this.materials[11];
+        case "mat07": return this.materials[6];
+        case "mat07sleep": return this.materials[12];
+        default:  return this.materials[12]; 
+      } 
+    },
+    allObjectLoaded: allObjectLoaded
 	}
-
+  
+	return self;
 };

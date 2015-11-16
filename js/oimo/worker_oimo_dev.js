@@ -14,9 +14,7 @@
 //---------------------------------------------------
 
 'use strict';
-//importScripts('../../build/Oimo.min.js');
-importScripts('../../build/Oimo.js');
-importScripts('demos.js');
+importScripts('../oimo.js');
 
 importScripts('vehicle/car.js');
 importScripts('vehicle/van.js');
@@ -35,6 +33,8 @@ var Gravity = -10, newGravity = -10;
 
 var timer, delay, timerStep, timeStart=0;
 var ToRad = Math.PI / 180;
+var ARRAY_TYPE;
+if(!ARRAY_TYPE) { ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : Array; }
 
 // array variable
 var bodys = [];
@@ -45,7 +45,6 @@ var matrixJoint = [];
 var types = [], sizes = [];
 var statics = [], staticTypes = [], staticSizes = [], staticMatrix = [];
 
-var infos = new Float32Array(13);
 var currentDemo = 0;
 var maxDemo = 10;
 
@@ -67,18 +66,11 @@ var removeTemp = {};
 
 self.onmessage = function (e) {
     var phase = e.data.tell;
-    if(phase === "INITWORLD"){
-        dt = e.data.dt || 1/60;
-        broadPhase = e.data.broadPhase || 2;
-        iterations = e.data.iterations || 8;
-        newGravity = e.data.G || -10;
-        createWorld();
-    }
     // from editor
     if(phase === "ADD") ADD(e.data.obj);
     if(phase === "GET") GET(e.data.names);
-    if(phase === "CLEAR") clearWorld();
-    if(phase === "BASIC") basicStart(e.data);
+    if(phase === "CLEAR_OIMO") clearWorld(); 
+    if(phase === "INIT_OIMO") basicStart(e.data.settings);
     // from mouse
     if(phase === "REMOVE"){ isNeedRemove = true; removeTemp = e.data; };
     if(phase === "SHOOT") SHOOT(e.data);
@@ -86,17 +78,15 @@ self.onmessage = function (e) {
     if(phase === "DRAG"){};
     
 
-    if(phase === "UPDATE"){ if(isTimout) update(); else timer = setInterval(update, timerStep);  }
+    if(phase === "UPDATE_OIMO"){ if(isTimout) update(); else timer = setInterval(update, timerStep);  }
     if(phase === "KEY") userKey(e.data.key);
-    if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);
+    if(phase === "PLAYERMOVE") if(player !== null)player.move(e.data.v);  //to be removed
     if(phase === "CAMERA") userCamera(e.data.cam);
     if(phase === "GRAVITY") newGravity = e.data.G;
-    if(phase === "NEXT") initNextDemo();
-    if(phase === "PREV") initPrevDemo();
-    if(phase === "BONESLIST"){ 
+    if(phase === "BONESLIST"){ //to be removed
         bonesPosition = e.data.pos; 
         bonesRotation = e.data.rot;
-        startDemo();
+        //startDemo();
     }
 }
 
@@ -157,10 +147,12 @@ var SHOOT = function(data){
 
 var PUSH = function(data){
     var target = data.target.map(function(x) { return x * OIMO.INV_SCALE; });
+    var pos = data.pos.map(function(x) { return x * OIMO.INV_SCALE; });
     var position = new OIMO.Vec3();
-    //var position = new OIMO.Vec3(data.obj.pos[0], data.obj.pos[1], data.obj.pos[2]);
-    var force = new OIMO.Vec3(target[0],target[1], target[2]);
-    bodys[data.n].applyImpulse(position,force)
+    var position = new OIMO.Vec3(pos[0], pos[1], pos[2]);
+    var force = new OIMO.Vec3(100*target[0],100*target[1],100*target[2]);
+    if(bodys[data.n])
+      bodys[data.n].applyImpulse(position,force)
 }
 
 //--------------------------------------------------
@@ -206,7 +198,7 @@ var update = function(){
     }
 
     // body info
-    i =  bodys.length;
+    i = bodys.length;
     while (i--) {
         if( wakeup ) bodys[i].awake();
         matrix[i] = bodys[i].getMatrix();
@@ -218,9 +210,9 @@ var update = function(){
         matrixJoint[i] = joints[i].getMatrix();
     }
    
-    worldInfo();
+    //worldInfo();
 
-    self.postMessage({tell:"RUN", infos:infos, matrix:matrix, matrixJoint:matrixJoint });
+    self.postMessage({tell:"UPDATE_THREE", infos:world.performance.toArray(), matrix:matrix, matrixJoint:matrixJoint });
 
     if(isTimout){
         delay = timerStep - (Date.now()-timeStart);
@@ -280,7 +272,6 @@ var createWorld = function(){
     world.gravity = new OIMO.Vec3(0, Gravity, 0);
     
     resetArray();
-    lookIfNeedInfo();
 
 }
 
@@ -292,8 +283,8 @@ var clearWorld = function(){
 
     if(isTimout)clearTimeout(timer);
     else clearInterval(timer);
-
-    world.clear();
+    if(world)
+      world.clear();
     // Clear control object
     if(car !== null ) car = null;
     if(van !== null ) van = null;
@@ -302,7 +293,7 @@ var clearWorld = function(){
 
     resetArray();
     // Clear three object
-    self.postMessage({tell:"CLEAR"});
+    self.postMessage({tell:"CLEAR_THREE"});
 
 }
 
@@ -330,6 +321,8 @@ var resetArray = function (){
 //--------------------------------------------------
 
 var basicStart = function(data){
+  
+    world = world || new OIMO.World();
     
     isTimout = data.timer || false;
 
@@ -361,43 +354,11 @@ var basicStart = function(data){
             }
         }
     }
-
-    self.postMessage({tell:"INITSTATIC", types:staticTypes, sizes:staticSizes, matrix:staticMatrix });
-    self.postMessage({tell:"INIT", types:types, sizes:sizes, demo:-1, joints:joints.length });
-}
-
-//--------------------------------------------------
-//    DEMO INIT
-//--------------------------------------------------
-
-var initNextDemo = function(){
-    clearWorld();
-    currentDemo ++;
-    if(currentDemo === maxDemo)currentDemo=0;
-    lookIfNeedInfo();
-}
-
-var initPrevDemo = function(){
-    clearWorld();
-    currentDemo --;
-    if(currentDemo < 0) currentDemo=maxDemo-1;
-    lookIfNeedInfo();
-}
-
-var lookIfNeedInfo = function(){
-    if(currentDemo===6) getBonesInfo('sila');
-    else startDemo();
-}
-
-var startDemo = function(){
-
-    // start new demo
-    eval("demo"+currentDemo)();
-
-    // start engine
-    self.postMessage({tell:"INITSTATIC", types:staticTypes, sizes:staticSizes, matrix:staticMatrix });
-    self.postMessage({tell:"INIT", types:types, sizes:sizes, demo:currentDemo, joints:joints.length });
-
+    
+    self.postMessage( { tell:"INIT_DEMO" } );  
+    //for some reason all those arrays are empty, and that doesn't matter? (notSendToThree related)
+    self.postMessage( { tell:"INIT_THREE", non_static : {types:types, sizes:sizes, joints:joints.length}, 
+                        static_objects : {types:staticTypes, sizes:staticSizes, matrix:staticMatrix} } );
 }
 
 //--------------------------------------------------
@@ -415,6 +376,7 @@ var addRigid = function(obj, OO){
         var t = obj.type;
         if( t === 'column') {s[0] = s[0]*2; s[2] = s[2]*2; obj.size = s; }
         if ( t==="sphere"  || t==="wheel" || t==="wheelinv" || t==="nball" || t==="gyro" || t==="vanwheel" || t==="droid") obj.type = "sphere";
+        else if(t === 'cylinder') obj.type = 'cylinder';
         else obj.type = "box";
     }
 
@@ -449,26 +411,5 @@ var addJoint = function(obj){
     var j = new OIMO.Link(obj);
     if(obj.type === "jointDistance" || obj.show )joints.push(j.joint);
     return j.joint;
-
-}
-
-//--------------------------------------------------
-//   WORLD INFO
-//--------------------------------------------------
-
-var worldInfo = function(){
-
-    infos[0] = world.broadPhase.types;
-    infos[1] = world.numRigidBodies;
-    infos[2] = world.numContacts;
-    infos[3] = world.broadPhase.numPairChecks;
-    infos[4] = world.numContactPoints;
-    infos[5] = world.numIslands;
-    infos[6] = world.performance.broadPhaseTime;
-    infos[7] = world.performance.narrowPhaseTime ;
-    infos[8] = world.performance.solvingTime;
-    infos[9] = world.performance.updatingTime;
-    infos[10] = world.performance.totalTime;
-    infos[11] = world.performance.fpsint;
 
 }
