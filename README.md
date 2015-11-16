@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <img src="http://lo-th.github.io/Oimo.js/images/logos.png"/>  Oimo.js 
 =========
 <img src="http://lo-th.github.io/Oimo.js/images/head.jpg"/>
@@ -60,3 +61,8 @@ In demo with three.js, i scale all by 100 so object is between 10 to 10000 three
 You can change world scale.<br>
 for three : world.worldscale(100);<br>
 default : world.worldscale(1);
+=======
+This is a very simple Pokedex single page client application built with React, Redux, Webpack, and Babel.
+
+It's just meant for learning and should be complemented by a series of articles on http://davidandsuzi.com
+>>>>>>> refs/remotes/simpler-boilerplate/master

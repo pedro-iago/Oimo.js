@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 var express = require("express");
 var path    = require('path');
 var fs      = require('fs');
@@ -25,4 +26,23 @@ io.on('connection', function(socket){
   });
   socket.on( 'getNumDemos', () => { io.emit('numDemos', numDemos); } );
   socket.on( 'disconnect', () => { console.log('user disconnected'); } );
+=======
+var webpack = require('webpack');
+var WebpackDevServer = require('webpack-dev-server');
+var config = require('./webpack.config');
+
+new WebpackDevServer(webpack(config), {
+  publicPath: config.output.publicPath,
+  hot: true,
+  historyApiFallback: true,
+  stats: {
+    colors: true
+  }
+}).listen(3000, 'localhost', function (err) {
+  if (err) {
+    console.log(err);
+  }
+
+  console.log('Listening at localhost:3000');
+>>>>>>> refs/remotes/simpler-boilerplate/master
 });

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //runned by index.html
 "use strict";
 
@@ -139,3 +140,14 @@ function displayInfo(a){
   ].join("\n");
   Interface.log(info);
 }
+=======
+import React from 'react';
+import App from './containers/App';
+import './css/bootstrap.css';
+import './css/index.css';
+
+React.render(
+  <App />,
+  document.getElementById('root')
+);
+>>>>>>> refs/remotes/simpler-boilerplate/master
