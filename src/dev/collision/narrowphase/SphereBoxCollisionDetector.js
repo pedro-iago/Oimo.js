@@ -1,7 +1,3 @@
-/**
- * A collision detector which detects collisions between sphere and box.
- * @author saharan
- */
 OIMO.SphereBoxCollisionDetector = function(flip){
     OIMO.CollisionDetector.call( this );
     this.flip=flip;
@@ -68,7 +64,6 @@ OIMO.SphereBoxCollisionDetector.prototype.detectCollision = function(shape1,shap
         overlap|=4;
     }
     if(overlap==7){
-        // center of sphere is in the box
         if(sx<0){
             dx=hw+sx;
         }else{

@@ -1,7 +1,3 @@
-/**
- * A collision detector which detects collisions between two spheres.
- * @author saharan
- */
 OIMO.SphereSphereCollisionDetector = function(){
     OIMO.CollisionDetector.call( this );
 }

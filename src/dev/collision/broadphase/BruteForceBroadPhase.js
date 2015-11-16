@@ -1,7 +1,3 @@
-/**
-* A broad-phase algorithm with brute-force search.
-* This always checks for all possible pairs.
-*/
 OIMO.BruteForceBroadPhase = function(){
     OIMO.BroadPhase.call( this);
     this.types = 0x1;
@@ -21,7 +17,6 @@ OIMO.BruteForceBroadPhase.prototype.addProxy = function (proxy) {
         //this.maxProxies<<=1;
         this.maxProxies*=2;
         var newProxies=[];
-        newProxies.length = this.maxProxies;
         var i = this.numProxies;
         while(i--){
         //for(var i=0, l=this.numProxies;i<l;i++){
@@ -32,9 +27,7 @@ OIMO.BruteForceBroadPhase.prototype.addProxy = function (proxy) {
     this.proxies[this.numProxies++]=proxy;
 }
 OIMO.BruteForceBroadPhase.prototype.removeProxy = function (proxy) {
-    var i = this.numProxies;
-    while(i--){
-    //for(var i=0, l=this.numProxies;i<l;i++){
+    for(var i=0, l=this.numProxies;i<l;i++){
         if(this.proxies[i]==proxy){
             this.proxies[i]=this.proxies[--this.numProxies];
             this.proxies[this.numProxies]=null;
@@ -52,7 +45,7 @@ OIMO.BruteForceBroadPhase.prototype.collectPairs = function () {
             var b1=p1.aabb;
             var s1=p1.shape;
             var j = this.numProxies;
-            while(j--){ if(j!==i){
+            while(j--){ if(j!==0){
             //for(var j=i+1, m=this.numProxies;j<m;j++){
                 var p2=this.proxies[j];
                 var b2=p2.aabb;

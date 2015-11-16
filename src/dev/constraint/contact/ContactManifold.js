@@ -1,16 +1,8 @@
-/**
-* A contact manifold between two shapes.
-* @author saharan
-*/
 OIMO.ContactManifold = function(){
-    // The first rigid body.
     this.body1 = null;
-    // The second rigid body.
     this.body2 = null;
-    // The number of manifold points.
     this.numPoints = 0;
-    // The manifold points.
-    this.points = [];
+    this.points = [];// vector 4
     this.points.length = 4;
     this.points[0] = new OIMO.ManifoldPoint();
     this.points[1] = new OIMO.ManifoldPoint();
@@ -19,27 +11,12 @@ OIMO.ContactManifold = function(){
 }
 OIMO.ContactManifold.prototype = {
     constructor: OIMO.ContactManifold,
-    /**
-    * Reset the manifold.
-    * @param   shape1
-    * @param   shape2
-    */
+
     reset:function(shape1,shape2){
         this.body1=shape1.parent;
         this.body2=shape2.parent;
         this.numPoints=0;
     },
-    /**
-    * Add a point into this manifold.
-    * @param   x
-    * @param   y
-    * @param   z
-    * @param   normalX
-    * @param   normalY
-    * @param   normalZ
-    * @param   penetration
-    * @param   flip
-    */
     addPoint:function(x,y,z,normalX,normalY,normalZ,penetration,flip){
         var p=this.points[this.numPoints++];
         p.position.x=x;

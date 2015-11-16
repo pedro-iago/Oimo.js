@@ -1,13 +1,11 @@
-/**
-* A projection axis for sweep and prune broad-phase.
-* @author saharan
-*/
 OIMO.SAPAxis = function(){
     this.numElements=0;
+    this.stack=[];// vector !
+    this.stack.length = 64;
     this.bufferSize=256;
-    this.elements=[];
+    this.elements=[];// vector !
     this.elements.length = this.bufferSize;
-    this.stack=new OIMO_ARRAY_TYPE(64);
+
 };
 
 OIMO.SAPAxis.prototype = {
@@ -19,9 +17,7 @@ OIMO.SAPAxis.prototype = {
             //this.bufferSize<<=1;
             this.bufferSize*=2;
             var newElements=[];
-            var i = this.numElements;
-            while(i--){
-            //for(var i=0, l=this.numElements; i<l; i++){
+            for(var i=0, l=this.numElements; i<l; i++){
                 newElements[i]=this.elements[i];
             }
         }
@@ -48,7 +44,6 @@ OIMO.SAPAxis.prototype = {
         for(i=maxIndex+1, l=this.numElements; i<l; i++){
             this.elements[i-2]=this.elements[i];
         }
-
         this.elements[--this.numElements]=null;
         this.elements[--this.numElements]=null;
     },
@@ -60,21 +55,21 @@ OIMO.SAPAxis.prototype = {
         count=0;
         var giveup=false;
         var elements=this.elements;
-        for(var i=1, l=this.numElements; i<l; i++){ // try insertion sort
+        for(var i=1, l=this.numElements; i<l; i++){
             var tmp=elements[i];
             var pivot=tmp.value;
             var tmp2=elements[i-1];
             if(tmp2.value>pivot){
                 var j=i;
                 do{
-                    elements[j]=tmp2;
-                    if(--j==0)break;
-                    tmp2=elements[j-1];
+                elements[j]=tmp2;
+                if(--j==0)break;
+                tmp2=elements[j-1];
                 }while(tmp2.value>pivot);
                 elements[j]=tmp;
                 count+=i-j;
                 if(count>threshold){
-                    giveup=true; // stop and use quick sort
+                    giveup=true;
                     break;
                 }
             }
@@ -87,53 +82,56 @@ OIMO.SAPAxis.prototype = {
             var right=stack[--count];
             var left=stack[--count];
             var diff=right-left;
-            if(diff>16){  // quick sort
-                //var mid=left+(diff>>1);
-                var mid=left+(Math.floor(diff*0.5));
-                tmp=elements[mid];
-                elements[mid]=elements[right];
-                elements[right]=tmp;
-                pivot=tmp.value;
-                i=left-1;
-                j=right;
-                while(true){
-                    var ei;
-                    var ej;
-                    do{ ei=elements[++i]; }while(ei.value<pivot);
-                    do{ ej=elements[--j]; }while(pivot<ej.value&&j!=left);
-                    if(i>=j)break;
-                    elements[i]=ej;
-                    elements[j]=ei;
-                }
-
-                elements[right]=elements[i];
-                elements[i]=tmp;
-                if(i-left>right-i){
-                    stack[count++]=left;
-                    stack[count++]=i-1;
-                    stack[count++]=i+1;
-                    stack[count++]=right;
-                }else{
-                    stack[count++]=i+1;
-                    stack[count++]=right;
-                    stack[count++]=left;
-                    stack[count++]=i-1;
-                }
+            if(diff>16){
+            var mid=left+(diff>>1);
+            //var mid=left+(diff*0.5);
+            tmp=elements[mid];
+            elements[mid]=elements[right];
+            elements[right]=tmp;
+            pivot=tmp.value;
+            i=left-1;
+            j=right;
+            while(true){
+                var ei;
+                var ej;
+                do{
+                ei=elements[++i];
+                }while(ei.value<pivot);
+                do{
+                ej=elements[--j];
+                }while(pivot<ej.value&&j!=left);
+                if(i>=j)break;
+                elements[i]=ej;
+                elements[j]=ei;
+            }
+            elements[right]=elements[i];
+            elements[i]=tmp;
+            if(i-left>right-i){
+                stack[count++]=left;
+                stack[count++]=i-1;
+                stack[count++]=i+1;
+                stack[count++]=right;
             }else{
-                for(i=left+1;i<=right;i++){
-                    tmp=elements[i];
-                    pivot=tmp.value;
-                    tmp2=elements[i-1];
-                    if(tmp2.value>pivot){
-                        j=i;
-                        do{
-                            elements[j]=tmp2;
-                            if(--j==0)break;
-                            tmp2=elements[j-1];
-                        }while(tmp2.value>pivot);
-                        elements[j]=tmp;
-                    }
-                }
+                stack[count++]=i+1;
+                stack[count++]=right;
+                stack[count++]=left;
+                stack[count++]=i-1;
+            }
+            }else{
+            for(i=left+1;i<=right;i++){
+            tmp=elements[i];
+            pivot=tmp.value;
+            tmp2=elements[i-1];
+            if(tmp2.value>pivot){
+            j=i;
+            do{
+            elements[j]=tmp2;
+            if(--j==0)break;
+            tmp2=elements[j-1];
+            }while(tmp2.value>pivot);
+            elements[j]=tmp;
+            }
+            }
             }
         }
     },
