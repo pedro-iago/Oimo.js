@@ -104,7 +104,7 @@ if(!OIMO_ARRAY_TYPE) { OIMO_ARRAY_TYPE = typeof Float32Array !== 'undefined' ? F
     if(!perfNow) perfNow = Date.now;
     //w.perfNow = perfNow;
     OIMO.now = perfNow;
-})(window);
+})(self);
 /**
  * The class of physical computing world. 
  * You must be added to the world physical all computing objects
