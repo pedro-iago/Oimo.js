@@ -84,7 +84,7 @@ var ThreeEngine = function () {
 
 	var isOptimized;
 
-	var mouseMode = [ 'none', 'delete', 'shoot', 'push', 'drag' ];
+	var mouseMode = [ 'drag', 'delete', 'shoot', 'push' ];
 	var mMode = 0; 
 
 	var debugColor = 0x282929;
@@ -115,14 +115,16 @@ var ThreeEngine = function () {
 
 
 		scene = new THREE.Scene();
+    //add axisHelper
+    var axisHelper = new THREE.AxisHelper( 500 );
+    scene.add( axisHelper );
+    
 		camera = new THREE.PerspectiveCamera( 60, 1, 1, 20000 );
 		//scene.add(camera);
 
-		
-
 		materialSky = new THREE.MeshBasicMaterial( { map:basicSky() , depthWrite: false} );// side:THREE.BackSide,
 		var skyGeo = new THREE.BufferGeometry();
-        skyGeo.fromGeometry( new THREE.SphereGeometry(10000, 20, 12) );
+    skyGeo.fromGeometry( new THREE.SphereGeometry(10000, 20, 12) );
 		sky = new THREE.Mesh(skyGeo, materialSky);
 		sky.rotation.y = 180*ToRad;
 		sky.scale.set(1,1,-1);
@@ -139,7 +141,7 @@ var ThreeEngine = function () {
 		//
 		
 		
-        scene.add(back);
+    scene.add(back);
 		scene.add(content);
 		scene.add(contentPlus);
 		scene.add(contentDebug);
@@ -1361,7 +1363,8 @@ var ThreeEngine = function () {
 
 	var seaList = ['geo', 'snake', 'sila', 'gyro', 'droid'];
 	var seaN = 0;
-
+  var allObjectLoaded = () => {}; //dummy holder for self.allObjectLoaded()
+  
 	var initSea3DMesh = function (){
 		var name = seaList[seaN];
 		//pool = new SEA3D.Pool('res/model/droid.sea', populate)
@@ -1376,7 +1379,8 @@ var ThreeEngine = function () {
 			if(seaList[seaN]!=null)initSea3DMesh();
 			else{
 				defineGeometry();
-				mainAllObjectLoaded();
+        window.objectsAreLoaded = true;
+				self.allObjectLoaded();
 				isLoading = false;
 			} 
 		}
@@ -1576,7 +1580,8 @@ var ThreeEngine = function () {
 		playerSet.z += (playerSet.destZ - playerSet.z) * playerSet.speed;
 		playerSet.r = (-Math.atan2(playerSet.z-marker.position.z,playerSet.x-marker.position.x));
 
-        THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
+    
+    THREE.AnimationHandler.update( delta*(0.5 +  (playerSet.speed*5)) );
 
 		//the unit for velocity is [m/s] so you should devide movement amount by movement duration
 		var v = { 
@@ -1686,7 +1691,6 @@ var ThreeEngine = function () {
 			if ( intersectsBack.length || intersects.length ) {
 				if(!marker.visible) marker.visible=true;
 				
-
 				if ( intersectsBack.length ) {
 					if(markerMaterial.color!==0x888888)markerMaterial.color.setHex(0x888888);
 					point = intersectsBack[0].point;
@@ -1705,38 +1709,38 @@ var ThreeEngine = function () {
 					//console.log("intersects.length: "+ intersects.length);
 					//console.log("intersects.distance: "+ intersects[0].distance);
 					//console.log("intersects.face: "+ intersects[0].face);
-					point = intersects[0].point;
+					point = intersects[0].point; 
+          
+          let normal = intersects[0].face.normal;
+          let normalMatrix = new THREE.Matrix3().getNormalMatrix( intersects[0].object.matrixWorld );
+          normal = normal.clone().applyMatrix3( normalMatrix ).normalize();
+          
 					marker.position.copy( point );
 					//if(intersects[0].face!==null)marker.lookAt(intersects[0].face.normal);
 					selected = intersects[0].object;
 					selectedCenter = point;
 
 					//attachControl(selected);
-
-					if(mouse.down){
+					if(mouse.down && mouse.button===1){
 						switch(mouseMode[mMode]){
 							case 'delete': OimoWorker.postMessage({tell:"REMOVE", type:'object', n:selected.name}); break;
-							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[point.x, point.y, point.z]}); break;
+							case 'push': OimoWorker.postMessage({tell:"PUSH", n:selected.name, target:[-normal.x, -normal.y, -normal.z], pos:[point.x, point.y, point.z] }); break;
 
 							case 'drag': 
-							    var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
+							    //look onMouseMove function
+                  //var p1 = [selected.position.x-point.x, selected.position.y-point.y, selected.position.z-point.z];
 							break;
 							
-						
-
-
 						}
-				    }
-			    }
-			    if(mouseMode[mMode]==='shoot' && mouse.press){
-			    	mouse.press = false;
-					shoot(camera.position,point);
-				}
-
-
-		    } else {
-		    	marker.visible = false;
-		    }
+				  }
+			  }
+        if(mouseMode[mMode]==='shoot' && mouse.press){
+          mouse.press = false;
+          shoot(camera.position,point);
+        }
+      } else {
+        marker.visible = false;
+      }
 		}
 	}
 
@@ -1747,10 +1751,10 @@ var ThreeEngine = function () {
 	var shoot = function ( p0, p1 ) {
 		var n = content.children.length;
 		var bullet = new THREE.Mesh( geoBulletb, getMaterial('bullet') );
-		bullet.scale.set( 30, 30, 30 ); 
+    bullet.scale.set( 30, 30, 30 ); 
 		bullet.position.y = 10000;
 		bullet.receiveShadow = true;
-	    bullet.castShadow = true;
+	  bullet.castShadow = true;
 		bullet.name = n;
 
 		var impulse = p1.sub(p0);
@@ -1818,7 +1822,7 @@ var ThreeEngine = function () {
 		mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = - ( py / vsize.y ) * 2 + 1;
 		mouse.down = true;
-		if(mouseMode[mMode]==='shoot')mouse.press = true;
+		if(mouseMode[mMode]==='shoot' && mouse.button === 1)mouse.press = true;
 		if(followSpecial === 'droid')setPlayerDestination();
 		rayTest();
 	}
@@ -1828,41 +1832,51 @@ var ThreeEngine = function () {
 		doc.body.style.cursor = 'auto';
 	}
 
+  var old_mx, old_my = 0;
 	var onMouseMove = function (e) {
 		e.preventDefault();
 		var px, py;
-	    if(e.touches){
-	        px = e.clientX || e.touches[ 0 ].pageX;
-	        py = e.clientY || e.touches[ 0 ].pageY;
-	    } else {
-	        px = e.clientX;
-	        py = e.clientY;
-	    }
-		
-		mouse.mx = ( px / vsize.x ) * 2 - 1;
+    if(e.touches){
+        px = e.clientX || e.touches[ 0 ].pageX;
+        py = e.clientY || e.touches[ 0 ].pageY;
+    } else {
+        px = e.clientX;
+        py = e.clientY;
+    }  
+    mouse.mx = ( px / vsize.x ) * 2 - 1;
 		mouse.my = -( py / vsize.y ) * 2 + 1;
 		rayTest();
-
-		if (mouse.down && !camPos.automove ) {
-			if (mouse.moving) {
+    
+		if (mouse.down && !camPos.automove && mouse.moving) {
+			if (e.button === 2) {
 				doc.body.style.cursor = 'move';
 				camPos.horizontal = ((px - mouse.ox) * 0.3) + mouse.h;
 				camPos.vertical = (-(py - mouse.oy) * 0.3) + mouse.v;
+        camPos.vertical = Math.max( Math.min(camPos.vertical, 179.9), 0.01 );
 				moveCamera();
-			}/* else {
-				mouse.mx = ( e.clientX / vsize.x ) * 2 - 1;
-		    	mouse.my = -( e.clientY / vsize.y ) * 2 + 1;
-		    	rayTest();
-			}*/
+			}
+      else if(e.button === 0 && mouseMode[mMode] === 'drag'){
+        let off = new THREE.Vector3( -(mouse.mx - old_mx)*camPos.distance, -(mouse.my - old_my)*camPos.distance, 0);
+        off.applyAxisAngle(new THREE.Vector3(-1,0,0), (90 - mouse.v) * Math.PI/180);
+        off.applyAxisAngle(new THREE.Vector3(0,1,0), (90 - mouse.h) * Math.PI/180);
+        center.x += off.x;
+        center.y += off.y;
+        center.z += off.z;
+        moveCamera();
+      }
 		}
+    
+    old_mx = mouse.mx;
+		old_my = mouse.my;  
 	}
 
 	var onMouseWheel = function (e) {
-		var delta = 0;
+    var delta = 0;
 		if(e.wheelDeltaY){delta=e.wheelDeltaY*0.01;}
 		else if(e.wheelDelta){delta=e.wheelDelta*0.05;}
 		else if(e.detail){delta=-e.detail*1.0;}
-		camPos.distance-=(delta*10);
+		camPos.distance-=(delta*100);
+    camPos.distance = Math.max(camPos.distance, 0.1);
 		moveCamera();
 	}
 
@@ -1961,10 +1975,10 @@ var ThreeEngine = function () {
 			camPos.horizontal = unwrapDegrees(camPos.horizontal);
 			camPos.vertical = unwrapDegrees(camPos.vertical);
 			phi = camPos.vertical*ToRad;
-		    theta = camPos.horizontal*ToRad;
+		  theta = camPos.horizontal*ToRad;
 		} else{
 			phi = vertical*ToRad;
-		    theta = horizontal*ToRad;
+		  theta = horizontal*ToRad;
 		}
 		if(mainCamera){
 			camPos.phi = phi; camPos.theta = theta;
@@ -1995,11 +2009,8 @@ var ThreeEngine = function () {
 		return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 	}
 
-
-
 	// public methode
-
-	return {
+  var self = {
 
 		domElement: container,
 
@@ -2047,7 +2058,7 @@ var ThreeEngine = function () {
 			if(mMode === mouseMode.length) mMode = 0;
 		},
 		getMouseMode: function () {
-			return 'mouse ' + mouseMode[mMode];
+			return mouseMode[mMode];
 		},
 		getFps: function (name) {
 			return fpstxt +" fps / "+ ms+" ms"//+"/"+maxms+" ms";
@@ -2058,6 +2069,24 @@ var ThreeEngine = function () {
 		getAnistropy: function (name) {
 			return MaxAnistropy;
 		},
+    mapMaterial: function (meshName, sleeps){ 
+      meshName = sleeps? meshName.substr(0,5) + "sleep" : meshName.substr(0,5); 
+      switch( meshName ){
+        case "mat01": return this.materials[0];      
+        case "mat01sleep": return this.materials[8];
+        case "mat02": return this.materials[1];
+        case "mat02sleep": return this.materials[9];
+        case "mat03": return this.materials[2];
+        case "mat03sleep": return this.materials[10];  
+        case "mat04": return this.materials[3];
+        case "mat04sleep": return this.materials[11];
+        case "mat07": return this.materials[6];
+        case "mat07sleep": return this.materials[12];
+        default:  return this.materials[12]; 
+      } 
+    },
+    allObjectLoaded: allObjectLoaded
 	}
-
+  
+	return self;
 };

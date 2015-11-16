@@ -1,4 +1,4 @@
-CLEAR({timer:false, timestep:1/60, iteration:8, broadphase:2, G:-10});
+WORLD({timer:false, timestep:1/60, iteration:8, broadphase:2, G:-10});
 
 function initDemo()
 {
