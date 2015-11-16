@@ -97,6 +97,9 @@ OimoWorker.onmessage = function(e) {
 //  OIMO POST MESSAGE FUNCTION
 //-----------------------------------------------------
 
+function sendKey(key){ OimoWorker.postMessage({tell:"KEY", key:key}); }
+function sendCameraOrientation(phi, theta){ OimoWorker.postMessage({tell:"CAMERA", cam:[phi, theta]}); }
+function changeGravity(G){ OimoWorker.postMessage({tell:"GRAVITY", G:G}); }
 
 //-----------------------------------------------------
 // TRANSE SCRIPT
