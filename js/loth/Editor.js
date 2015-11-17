@@ -4,7 +4,7 @@
  'use strict';
 var Editor = function (Pos) {
 	var doc = document;
-	
+
 	var left = Pos || 310;//590;
 	var render3d, scene3d = null;
 	var unselect = '-o-user-select:none; -ms-user-select:none; -khtml-user-select:none; -webkit-user-select:none; -moz-user-select: none;'
@@ -13,9 +13,9 @@ var Editor = function (Pos) {
 	var type = "color";
 	var open = false;
 
-  var container = doc.createElement( 'div' );
+  var container = doc.getElementById( 'Editor' );
 	container.style.cssText = unselect+'position:absolute; margin:0; padding:0; top:0px; left:50%; color:#CCCCCC; width:50%; height:100%; font-size:12px; font-family:Consolas; pointer-events:none; display:none; background: linear-gradient(45deg, #1d1f20, #2f3031);';
-	container.id = 'Editor';
+	//container.id = 'Editor';
 
 	var show = function(mode){
 		if(mode === 'v'){
@@ -74,9 +74,9 @@ var Editor = function (Pos) {
 	icColor.style.cssText = "-webkit-border-radius:60px; border-radius:60px; position:absolute; width:46px; height:46px; pointer-events:none; background-color: rgba(0,0,0,0); pointer-events:none;";
 	var icRun = doc.createElement( 'div' );
 	icRun.style.cssText = "position:absolute; width:46px; height:46px; pointer-events:none;";
-	icRun.innerHTML = icon_update; 
+	icRun.innerHTML = icon_update;
 	container.appendChild( bRun );
-	
+
   bRun.appendChild(icColor);
 	bRun.appendChild(icRun);
 	bRun.addEventListener( 'mousedown', function ( event ) { event.preventDefault(); update(); icColor.style.backgroundColor = 'rgba(0,116,217,0.7)'; }, false );
@@ -89,7 +89,7 @@ var Editor = function (Pos) {
 		dom.style.oTransform = 'rotate('+rvalue+'deg)';
 		dom.style.transform = 'rotate('+rvalue+'deg)';
 	}
-  
+
   var bbMenu = [];
 	var nscript;
 	var maxDemo = window.numDemos || 11;
@@ -107,7 +107,7 @@ var Editor = function (Pos) {
 		MainEditor.contentWindow.setBase(Editor);
 		MainEditor.contentWindow.loadfileJS(name+".js");
 	}
-  
+
 	var update = function (){
 		var head = doc.getElementsByTagName('head')[0];
 		nscript = doc.createElement("script");
@@ -118,7 +118,7 @@ var Editor = function (Pos) {
 		nscript.text = MainEditor.contentWindow.codeEditor.getValue();
 		head.appendChild(nscript);
 	}
-  
+
   var init =  function () {
     // MENU DEMO
 		for(let i=0;i!==maxDemo;i++){

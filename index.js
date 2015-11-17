@@ -5,5 +5,5 @@ import './css/index.css';
 
 React.render(
   <App />,
-  document.getElementById('root')
+  document.getElementById("Editor")
 );

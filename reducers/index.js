@@ -1,1 +1,1 @@
-export { default as pokemon } from './pokemon';
+export { default as RepoReducer } from './RepoReducer';

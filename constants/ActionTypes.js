@@ -1,2 +1,2 @@
-export const SEARCH_INPUT_CHANGED = 'SEARCH_INPUT_CHANGED';
-export const MARK_CAUGHT = 'MARK_CAUGHT';
+export const SEARCH_TERM = 'SEARCH_TERM';
+export const SELECT_ITEM = 'SELECT_ITEM';
